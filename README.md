@@ -1,4 +1,4 @@
-Perfeito — corrigi **toda a formatação** do seu README pra você já copiar e colar direto no GitHub sem quebrar nada 👇
+
 
 ---
 
