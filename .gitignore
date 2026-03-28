@@ -1,0 +1,26 @@
+# Dependências
+node_modules/
+package-lock.json
+
+# Banco de dados
+*.sqlite
+*.sqlite3
+database/*.sqlite
+
+# Arquivos de ambiente
+.env
+service-account.json
+echo "service-account.json" >> .gitignore
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

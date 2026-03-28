@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Pedidos - Grupo 2</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>
+                    <span class="icon">📦</span>
+                    Sistema de Pedidos
+                </h1>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalOrders">0</div>
+                        <div class="stat-label">Total Pedidos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalValue">R$ 0</div>
+                        <div class="stat-label">Valor Total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgValue">R$ 0</div>
+                        <div class="stat-label">Médio</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Filtros -->
+        <div class="filters">
+            <div class="filter-group">
+                <label>🔍 Cliente ID</label>
+                <input type="number" id="filterCliente" placeholder="Digite o ID do cliente">
+            </div>
+            <div class="filter-group">
+                <label>📊 Status</label>
+                <select id="filterStatus">
+                    <option value="">Todos</option>
+                    <option value="created">Criado</option>
+                    <option value="paid">Pago</option>
+                    <option value="shipped">Enviado</option>
+                    <option value="delivered">Entregue</option>
+                    <option value="canceled">Cancelado</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>📅 Ordenar por</label>
+                <select id="orderBy">
+                    <option value="created_at">Data</option>
+                    <option value="total">Valor Total</option>
+                    <option value="status">Status</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>⬆️⬇️</label>
+                <select id="orderDir">
+                    <option value="DESC">Mais recente</option>
+                    <option value="ASC">Mais antigo</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="aplicarFiltros()">
+                🔄 Aplicar Filtros
+            </button>
+            <button class="btn-secondary" onclick="limparFiltros()">
+                🧹 Limpar
+            </button>
+        </div>
+
+        <!-- Tabela de Pedidos -->
+        <div class="orders-table-container">
+            <table class="orders-table">
+                <thead>
+                    <tr>
+                        <th>UUID</th>
+                        <th>Cliente</th>
+                        <th>Data</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <tr>
+                        <td colspan="6" class="loading">Carregando pedidos...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        <div class="pagination">
+            <button class="page-btn" onclick="mudarPagina('prev')" id="prevBtn">◀ Anterior</button>
+            <span class="page-info" id="pageInfo">Página 1 de 1</span>
+            <button class="page-btn" onclick="mudarPagina('next')" id="nextBtn">Próxima ▶</button>
+        </div>
+
+        <!-- Modal de Detalhes do Pedido -->
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Detalhes do Pedido</h2>
+                    <span class="close" onclick="fecharModal()">&times;</span>
+                </div>
+                <div id="modalBody" class="modal-body">
+                    Carregando...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
