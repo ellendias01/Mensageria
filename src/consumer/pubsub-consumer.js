@@ -1,10 +1,28 @@
 const { PubSub } = require('@google-cloud/pubsub');
 const path = require('path');
+const fs = require('fs');
 const OrderService = require('../services/orderService');
 
-// Configurar credenciais
-const credPath = path.join(__dirname, '../../service-account.json');
-process.env.GOOGLE_APPLICATION_CREDENTIALS = credPath;
+// Configurar credenciais:
+// 1) Usa GOOGLE_APPLICATION_CREDENTIALS, se já estiver definido.
+// 2) Caso contrário, tenta service-account.json na raiz do projeto.
+const defaultCredPath = path.join(__dirname, '../../service-account.json');
+const configuredCredPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || defaultCredPath;
+process.env.GOOGLE_APPLICATION_CREDENTIALS = configuredCredPath;
+
+if (!fs.existsSync(configuredCredPath)) {
+  console.log('='.repeat(60));
+  console.log('❌ ARQUIVO DE CREDENCIAL NÃO ENCONTRADO');
+  console.log('='.repeat(60));
+  console.log(`📁 Caminho esperado: ${configuredCredPath}`);
+  console.log('\n💡 Como corrigir:');
+  console.log('   1. Coloque o arquivo de chave JSON do Google Cloud no caminho acima; OU');
+  console.log('   2. Defina a variável GOOGLE_APPLICATION_CREDENTIALS com o caminho correto.');
+  console.log('\nExemplo (PowerShell):');
+  console.log("   $env:GOOGLE_APPLICATION_CREDENTIALS='C:\\caminho\\service-account.json'");
+  console.log('   npm run consumer\n');
+  process.exit(1);
+}
 
 console.log('='.repeat(60));
 console.log('🚀 CONSUMIDOR PUB/SUB - GRUPO 2');
