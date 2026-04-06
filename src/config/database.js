@@ -49,6 +49,7 @@ async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS orders (
       uuid TEXT PRIMARY KEY,
       created_at DATETIME NOT NULL,
+      received_at DATETIME,
       channel TEXT,
       status TEXT NOT NULL,
       customer_id INTEGER NOT NULL,
@@ -110,7 +111,41 @@ async function initializeDatabase() {
     )
   `);
   
+  // Criar índices para melhor performance
+  await db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+    CREATE INDEX IF NOT EXISTS idx_orders_received_at ON orders(received_at);
+    CREATE INDEX IF NOT EXISTS idx_orders_indexed_at ON orders(indexed_at);
+    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+  `);
+  
   console.log('✅ Banco de dados inicializado com sucesso!');
 }
 
-module.exports = { getDatabase };
+// Função para verificar e migrar banco de dados existente
+async function migrateDatabase() {
+    const db = await getDatabase();
+    
+    try {
+        // Verificar se a coluna received_at existe
+        const tableInfo = await db.all("PRAGMA table_info(orders)");
+        const hasReceivedAt = tableInfo.some(col => col.name === 'received_at');
+        
+        if (!hasReceivedAt) {
+            console.log('⚠️ Coluna received_at não encontrada. Adicionando...');
+            await db.exec("ALTER TABLE orders ADD COLUMN received_at DATETIME");
+            await db.exec("UPDATE orders SET received_at = indexed_at WHERE received_at IS NULL");
+            console.log('✅ Coluna received_at adicionada com sucesso!');
+        } else {
+            console.log('✅ Coluna received_at já existe!');
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('❌ Erro na migração:', error);
+        throw error;
+    }
+}
+
+module.exports = { getDatabase, migrateDatabase };

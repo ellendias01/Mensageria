@@ -9,9 +9,10 @@
     "dev": "nodemon src/api/server.js",
     "init-db": "node src/config/initDB.js",
     "setup-pubsub": "node src/config/setup-pubsub.js",
-    "mock-consumer": "node src/consumer/mock-consumer.js",
     "test-connection": "node src/config/test-connection.js",
-     "check-messages": "node src/config/check-messages.js"
+    "check-messages": "node src/config/check-messages.js"
+  
+
   },
   "dependencies": {
     "@google-cloud/pubsub": "^4.0.0",
