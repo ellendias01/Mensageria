@@ -17,20 +17,23 @@
 
 Este projeto foi desenvolvido como atividade da disciplina **Computação em Nuvem 2** da **FATEC - Desenvolvimento de Software Multiplataforma**.
 
-O sistema implementa um consumidor de mensagens do Google Cloud Pub/Sub para processar pedidos de um marketplace, persistindo os dados em um banco relacional e disponibilizando uma API RESTful para consulta.
+O sistema implementa um consumidor de mensagens do Google Cloud Pub/Sub para processar pedidos de um marketplace, persistindo os dados em um banco relacional, disponibilizando uma API RESTful com uma interface web para consulta e gestão dos pedidos.
 
 ---
 
 ## 🎯 Funcionalidades
 
-* ✅ Consumidor Pub/Sub (assíncrono)
-* ✅ Persistência em SQLite
-* ✅ API RESTful completa
+* ✅ Consumidor Pub/Sub (assíncrono): Processa mensagens assincronamente com sistema de ACK/NACK e logs detalhados
+* ✅ Persistência em SQLite: Modelo relacional completo no SQLite com tratamento de duplicidade (`INSERT OR REPLACE`)
+* ✅ API RESTful completa: Endpoints para listar, filtrar, detalhar e atualizar pedidos e clientes
 * ✅ Paginação e filtros
 * ✅ Cálculo automático de totais
-* ✅ Interface Web
-* ✅ Timestamp de processamento
-
+* ✅ Interface Web:
+  - Dashboard com estatísticas (total de pedidos, valor total, ticket médio)
+  - Filtros dinâmicos (por UUID, cliente, produto, status)
+* ✅ Timestamp de processamento: Exibe as datas de criação, recebimento e indexação do pedido
+* ✅ Tratamento de Erros: Gerencia conflitos de chave duplicada, garantindo idempotência
+  
 ---
 
 ## 🏗️ Arquitetura do Sistema
@@ -73,6 +76,9 @@ O sistema implementa um consumidor de mensagens do Google Cloud Pub/Sub para pro
 
 ```text
 projeto-mensageria/
+├── database/
+│   ├── database.sqlite
+│   └── shema.sql
 ├── public/
 │   ├── index.html
 │   ├── style.css
@@ -85,6 +91,9 @@ projeto-mensageria/
 │   │       └── customers.js
 │   ├── config/
 │   │   ├── database.js
+│   │   ├── test-connection.js
+│   │   ├── check-messages.js
+│   │   ├── setup-pubsub.js
 │   │   └── initDB.js
 │   ├── consumer/
 │   │   ├── real-consumer.js
@@ -217,9 +226,13 @@ npm run mock-consumer
 ## 🎨 Frontend
 
 * 📊 Dashboard com estatísticas
+  - Cards com Total de Pedidos, Valor Total e Ticket Médio     
 * 🔍 Filtros
+   -  Busca por UUID, código do cliente, ID do produto e status
 * 📄 Paginação
+  - Navegação entre páginas com indicador visual
 * 📋 Modal de detalhes
+  - Ao clicar, exibe todas as informações do pedido
 * 📱 Responsivo
 
 ---
@@ -268,7 +281,8 @@ npm run test-connection
 
 ## 👥 Autora
 
-**Éllen Dias Farias**
+Éllen Dias Farias    	
+Habbiner Andrade	   
 
 ---
 
