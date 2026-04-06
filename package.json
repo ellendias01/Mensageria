@@ -5,7 +5,7 @@
   "main": "src/api/server.js",
   "scripts": {
     "start": "node src/api/server.js",
-    "consumer": "node src/consumer/pubsub-consumer.js",
+    "pubsub-consumer": "node src/consumer/pubsub-consumer.js",
     "dev": "nodemon src/api/server.js",
     "init-db": "node src/config/initDB.js",
     "setup-pubsub": "node src/config/setup-pubsub.js",

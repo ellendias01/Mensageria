@@ -5,17 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Pedidos - Grupo 2</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
             <div class="header-content">
-                <h1>
-                    <span class="icon">📦</span>
-                    Sistema de Pedidos
-                </h1>
+                <div class="header-left">
+                    <div class="logo">
+                        <span class="logo-icon">📦</span>
+                        <h1>Sistema de Pedidos</h1>
+                    </div>
+                    <p class="subtitle">Gerencie e consulte pedidos do marketplace</p>
+                </div>
                 <div class="stats">
                     <div class="stat-card">
                         <div class="stat-value" id="totalOrders">0</div>
@@ -27,90 +30,103 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="avgValue">R$ 0</div>
-                        <div class="stat-label">Médio</div>
+                        <div class="stat-label">Ticket Médio</div>
                     </div>
                 </div>
             </div>
         </header>
 
         <!-- Filtros -->
-        <div class="filters">
-            <div class="filter-group">
-                <label>🔍 Cliente ID</label>
-                <input type="number" id="filterCliente" placeholder="Digite o ID do cliente">
+        <div class="filters-panel">
+            <div class="filters-header">
+                <div class="filters-title">
+                    <span class="filter-icon">🔍</span>
+                    <h3>Filtros de Busca</h3>
+                </div>
+                <button class="toggle-filters-btn" onclick="toggleFilters()">
+                    <span id="toggleIcon">▲</span> Ocultar
+                </button>
             </div>
-            <div class="filter-group">
-                <label>📊 Status</label>
-                <select id="filterStatus">
-                    <option value="">Todos</option>
-                    <option value="created">Criado</option>
-                    <option value="paid">Pago</option>
-                    <option value="shipped">Enviado</option>
-                    <option value="delivered">Entregue</option>
-                    <option value="canceled">Cancelado</option>
-                </select>
+            <div class="filters-body" id="filtersBody">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label>🆔 UUID do Pedido</label>
+                        <input type="text" id="filterUuid" placeholder="ORD-2025-0001">
+                    </div>
+                    <div class="filter-group">
+                        <label>👤 Código do Cliente</label>
+                        <input type="number" id="filterCliente" placeholder="49494">
+                    </div>
+                    <div class="filter-group">
+                        <label>📦 ID do Produto</label>
+                        <input type="number" id="filterProduto" placeholder="9001">
+                    </div>
+                    <div class="filter-group">
+                        <label>📊 Status</label>
+                        <select id="filterStatus">
+                            <option value="">Todos</option>
+                            <option value="created">🟡 Criado</option>
+                            <option value="paid">🟢 Pago</option>
+                            <option value="separated">🟠 Separado</option>
+                            <option value="shipped">🟣 Enviado</option>
+                            <option value="delivered">🔵 Entregue</option>
+                            <option value="canceled">🔴 Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-primary" onclick="aplicarFiltros()">
+                        🔄 Aplicar Filtros
+                    </button>
+                    <button class="btn-secondary" onclick="limparFiltros()">
+                        🧹 Limpar
+                    </button>
+                </div>
             </div>
-            <div class="filter-group">
-                <label>📅 Ordenar por</label>
-                <select id="orderBy">
-                    <option value="created_at">Data</option>
-                    <option value="total">Valor Total</option>
-                    <option value="status">Status</option>
-                </select>
+        </div>
+
+        <!-- Controles de Ordenação -->
+        <div class="controls-bar">
+            <div class="results-info">
+                Mostrando <strong id="resultsCount">0</strong> de <strong id="totalCount">0</strong> pedidos
             </div>
-            <div class="filter-group">
-                <label>⬆️⬇️</label>
-                <select id="orderDir">
-                    <option value="DESC">Mais recente</option>
-                    <option value="ASC">Mais antigo</option>
-                </select>
-            </div>
-            <button class="btn-primary" onclick="aplicarFiltros()">
-                🔄 Aplicar Filtros
-            </button>
-            <button class="btn-secondary" onclick="limparFiltros()">
-                🧹 Limpar
+            <button class="sort-btn" onclick="toggleSort()" id="sortBtn">
+                📅 Ordenar por data: <span id="sortText">Mais recente</span>
             </button>
         </div>
 
-        <!-- Tabela de Pedidos -->
-        <div class="orders-table-container">
-            <table class="orders-table">
-                <thead>
-                    <tr>
-                        <th>UUID</th>
-                        <th>Cliente</th>
-                        <th>Data</th>
-                        <th>Status</th>
-                        <th>Total</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="ordersTableBody">
-                    <tr>
-                        <td colspan="6" class="loading">Carregando pedidos...</td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- Lista de Pedidos -->
+        <div class="orders-list" id="ordersList">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Carregando pedidos...</p>
+            </div>
         </div>
 
         <!-- Paginação -->
-        <div class="pagination">
-            <button class="page-btn" onclick="mudarPagina('prev')" id="prevBtn">◀ Anterior</button>
-            <span class="page-info" id="pageInfo">Página 1 de 1</span>
-            <button class="page-btn" onclick="mudarPagina('next')" id="nextBtn">Próxima ▶</button>
+        <div class="pagination" id="pagination">
+            <button class="page-btn" onclick="mudarPagina('prev')" id="prevBtn">
+                ◀ Anterior
+            </button>
+            <div class="page-numbers" id="pageNumbers"></div>
+            <button class="page-btn" onclick="mudarPagina('next')" id="nextBtn">
+                Próxima ▶
+            </button>
         </div>
+    </div>
 
-        <!-- Modal de Detalhes do Pedido -->
-        <div id="modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
+    <!-- Modal de Detalhes -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <span class="modal-icon">📋</span>
                     <h2>Detalhes do Pedido</h2>
-                    <span class="close" onclick="fecharModal()">&times;</span>
                 </div>
-                <div id="modalBody" class="modal-body">
-                    Carregando...
-                </div>
+                <span class="close" onclick="fecharModal()">&times;</span>
+            </div>
+            <div id="modalBody" class="modal-body">
+                Carregando...
             </div>
         </div>
     </div>

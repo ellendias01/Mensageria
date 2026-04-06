@@ -16,62 +16,6 @@ const pubsub = new PubSub({
 // Nome do tópico (conforme o professor configurou)
 const TOPIC_NAME = 'aula-demo-pub';
 
-// Gerar pedido de exemplo
-function generateTestOrder() {
-  const orderId = `ORD-TEST-${Date.now()}`;
-  
-  return {
-    uuid: orderId,
-    created_at: new Date().toISOString(),
-    channel: "test_publisher",
-    status: "created",
-    customer: {
-      id: 9999,
-      name: "Cliente Teste Pub/Sub",
-      email: "teste@pubsub.com",
-      document: "111.222.333-44"
-    },
-    seller: {
-      id: 1,
-      name: "Loja Teste",
-      city: "São Paulo",
-      state: "SP"
-    },
-    items: [
-      {
-        id: 1,
-        product_id: 9999,
-        product_name: "Produto Teste",
-        unit_price: 100.00,
-        quantity: 2,
-        category: {
-          id: "TEST",
-          name: "Teste",
-          sub_category: {
-            id: "SUB",
-            name: "Subteste"
-          }
-        }
-      }
-    ],
-    shipment: {
-      carrier: "Correios",
-      service: "PAC",
-      status: "pending",
-      tracking_code: `TRK${Date.now()}`
-    },
-    payment: {
-      method: "pix",
-      status: "pending",
-      transaction_id: `PAY${Date.now()}`
-    },
-    metadata: {
-      source: "test_publisher",
-      user_agent: "Test Script",
-      ip_address: "127.0.0.1"
-    }
-  };
-}
 
 async function publishTestMessage() {
   try {

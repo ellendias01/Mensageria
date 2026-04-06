@@ -13,10 +13,8 @@ class OrderService {
     const db = await getDatabase();
     
     try {
-      // Iniciar transação
-      await db.exec('BEGIN TRANSACTION');
-      
       console.log(`📦 Processando pedido: ${orderData.uuid}`);
+      console.log(`   📅 Data de recebimento: ${new Date().toLocaleString('pt-BR')}`);
       
       // 1. Calcular totais
       const { orderTotal, itemsWithTotal } = this.calculateTotals(orderData);
@@ -36,7 +34,7 @@ class OrderService {
         });
       }
       
-      // 4. Salvar pedido
+      // 4. Salvar pedido (já inclui indexed_at)
       await Order.create(orderData);
       
       // 5. Salvar itens do pedido
@@ -50,24 +48,20 @@ class OrderService {
         });
       }
       
-      // 6. Commit da transação
-      await db.exec('COMMIT');
-      
       console.log(`✅ Pedido ${orderData.uuid} processado com sucesso!`);
       console.log(`   Total: R$ ${orderTotal.toFixed(2)}`);
       console.log(`   Itens: ${orderData.items.length}`);
-      console.log(`   Indexado em: ${new Date().toISOString()}`);
+      console.log(`   💾 Data de salvamento: ${new Date().toLocaleString('pt-BR')}`);
       
       return {
         success: true,
         uuid: orderData.uuid,
         total: orderTotal,
-        indexed_at: new Date().toISOString()
+        received_at: new Date().toISOString(),
+        saved_at: new Date().toISOString()
       };
       
     } catch (error) {
-      // Rollback em caso de erro
-      await db.exec('ROLLBACK');
       console.error(`❌ Erro ao processar pedido ${orderData.uuid}:`, error);
       throw error;
     }
@@ -157,6 +151,7 @@ class OrderService {
           COUNT(*) as total_orders,
           SUM(CASE WHEN status = 'created' THEN 1 ELSE 0 END) as created,
           SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid,
+          SUM(CASE WHEN status = 'separated' THEN 1 ELSE 0 END) as separated,
           SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END) as shipped,
           SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
           SUM(CASE WHEN status = 'canceled' THEN 1 ELSE 0 END) as canceled,
@@ -179,7 +174,7 @@ class OrderService {
   static async updateOrderStatus(uuid, newStatus) {
     const db = await getDatabase();
     
-    const validStatus = ['created', 'paid', 'shipped', 'delivered', 'canceled'];
+    const validStatus = ['created', 'paid', 'separated', 'shipped', 'delivered', 'canceled'];
     if (!validStatus.includes(newStatus)) {
       throw new Error('Status inválido');
     }
