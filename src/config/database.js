@@ -11,6 +11,14 @@ async function getDatabase() {
       driver: sqlite3.Database
     });
     
+    // ✅ CONFIGURAÇÕES PARA EVITAR SQLITE_BUSY
+    await db.exec('PRAGMA journal_mode = WAL');        // Write-Ahead Logging
+    await db.exec('PRAGMA busy_timeout = 30000');      // Timeout de 30 segundos
+    await db.exec('PRAGMA synchronous = NORMAL');      // Balancear performance/segurança
+    await db.exec('PRAGMA cache_size = -20000');       // 20MB de cache
+    await db.exec('PRAGMA temp_store = MEMORY');       // Usar memória para temporários
+    await db.exec('PRAGMA wal_autocheckpoint = 1000'); // Checkpoint a cada 1000 páginas
+    
     await initializeDatabase();
   }
   return db;
@@ -118,9 +126,11 @@ async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_orders_received_at ON orders(received_at);
     CREATE INDEX IF NOT EXISTS idx_orders_indexed_at ON orders(indexed_at);
     CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+    CREATE INDEX IF NOT EXISTS idx_order_items_order_uuid ON order_items(order_uuid);
+    CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
   `);
   
-  console.log('✅ Banco de dados inicializado com sucesso!');
+  console.log('✅ Banco de dados inicializado com sucesso (modo WAL ativado)!');
 }
 
 // Função para verificar e migrar banco de dados existente

@@ -196,7 +196,23 @@ async function verDetalhes(uuid) {
         alert('Erro ao carregar detalhes do pedido');
     }
 }
-
+async function sincronizarDados() {
+    console.log('🔄 Sincronizando dados...');
+    currentPage = 1;
+    await carregarPedidos();
+    await carregarEstatisticas();
+    
+    // Mostrar toast de confirmação
+    const toast = document.createElement('div');
+    toast.textContent = '✅ Dados sincronizados com o banco!';
+    toast.style.cssText = `
+        position: fixed; bottom: 20px; right: 20px; 
+        background: #28a745; color: white; padding: 10px 20px; 
+        border-radius: 8px; z-index: 9999;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
 // Mostrar modal
 function mostrarModal(order) {
     const modalBody = document.getElementById('modalBody');

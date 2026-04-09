@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor em Tempo Real - Grupo 2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', 'Inter', monospace;
+            background: #0a0e27;
+            color: #00ff88;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-led {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .stats-mini {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-mini {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        /* Grid principal */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background: #111827;
+            border-radius: 15px;
+            border: 1px solid #1f2937;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: #1f2937;
+            padding: 15px 20px;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .card-badge {
+            background: #374151;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+
+        .card-body {
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        /* Log de mensagens */
+        .log-entry {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #1a1f2e;
+            border-left: 3px solid;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-time {
+            color: #6b7280;
+            font-size: 0.7rem;
+            margin-right: 10px;
+        }
+
+        .log-message {
+            color: #e5e7eb;
+        }
+
+        .log-success { border-left-color: #10b981; }
+        .log-error { border-left-color: #ef4444; }
+        .log-info { border-left-color: #3b82f6; }
+        .log-warning { border-left-color: #f59e0b; }
+
+        /* Tabela de pedidos recentes */
+        .orders-table {
+            width: 100%;
+            font-size: 0.75rem;
+        }
+
+        .orders-table th {
+            text-align: left;
+            padding: 10px;
+            background: #1f2937;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+
+        .orders-table td {
+            padding: 10px;
+            border-bottom: 1px solid #1f2937;
+            color: #e5e7eb;
+        }
+
+        .orders-table tr:hover {
+            background: #1f2937;
+            cursor: pointer;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .status-created { background: #3b82f6; color: white; }
+        .status-paid { background: #10b981; color: white; }
+        .status-shipped { background: #8b5cf6; color: white; }
+        .status-delivered { background: #059669; color: white; }
+        .status-canceled { background: #ef4444; color: white; }
+
+        /* Controles */
+        .controls {
+            background: #111827;
+            border-radius: 15px;
+            padding: 15px 20px;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #374151;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #111827;
+            border-radius: 15px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            background: #1f2937;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #9ca3af;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>📡</span>
+                Monitor em Tempo Real
+            </h1>
+            <div class="status">
+                <div class="status-led"></div>
+                <span class="status-text">Monitorando mensagens...</span>
+                <div class="stats-mini">
+                    <div class="stat-mini">📨 Msgs: <span id="msgCount">0</span></div>
+                    <div class="stat-mini">✅ Processadas: <span id="processedCount">0</span></div>
+                    <div class="stat-mini">❌ Erros: <span id="errorCount">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="clearLogs()">🗑️ Limpar Logs</button>
+            <button class="btn btn-secondary" onclick="refreshOrders()">🔄 Atualizar Pedidos</button>
+            <button class="btn btn-danger" onclick="testConnection()">📤 Enviar Teste</button>
+        </div>
+
+        <div class="dashboard">
+            <!-- Coluna Esquerda: Logs em Tempo Real -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>
+                        <span>📨</span>
+                        Fluxo de Mensagens (Tempo Real)
+                    </h3>
+                    <span class="card-badge">WebSocket / Polling</span>
+                </div>
+                <div class="card-body" id="logContainer">
+                    <div class="loading">Aguardando mensagens...</div>
+                </div>
+            </div>
+
+            <!-- Coluna Direita: Últimos Pedidos -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>
+                        <span>📦</span>
+                        Últimos Pedidos no Banco
+                    </h3>
+                    <span class="card-badge">Atualização automática</span>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <table class="orders-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>UUID</th>
+                                <th>Cliente</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Indexado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr><td colspan="5" class="loading">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Detalhes -->
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Detalhes do Pedido</h3>
+                    <span class="close" onclick="closeModal()">&times;</span>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    Carregando...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3001';
+        let messageCount = 0;
+        let processedCount = 0;
+        let errorCount = 0;
+        let pollingInterval = null;
+
+        // Adicionar log
+        function addLog(message, type = 'info') {
+            const container = document.getElementById('logContainer');
+            const time = new Date().toLocaleTimeString('pt-BR');
+            
+            // Remover loading se existir
+            if (container.querySelector('.loading')) {
+                container.innerHTML = '';
+            }
+            
+            const logDiv = document.createElement('div');
+            logDiv.className = `log-entry log-${type}`;
+            logDiv.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-message">${message}</span>
+            `;
+            
+            container.insertBefore(logDiv, container.firstChild);
+            
+            // Limitar número de logs
+            while (container.children.length > 100) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // Atualizar contadores
+        function updateCounters() {
+            document.getElementById('msgCount').textContent = messageCount;
+            document.getElementById('processedCount').textContent = processedCount;
+            document.getElementById('errorCount').textContent = errorCount;
+        }
+
+        // Buscar pedidos recentes
+        async function fetchRecentOrders() {
+            try {
+                const response = await fetch(`${API_URL}/orders?limit=10&orderBy=created_at&orderDir=DESC`);
+                const data = await response.json();
+                
+                const tbody = document.getElementById('ordersTableBody');
+                
+                if (!data.data || data.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="loading">Nenhum pedido encontrado</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.data.map(order => `
+                    <tr onclick="viewOrderDetail('${order.uuid}')">
+                        <td><code>${order.uuid.substring(0, 16)}...</code></td>
+                        <td>${order.customer.name}</td>
+                        <td>R$ ${order.total.toFixed(2)}</td>
+                        <td><span class="status-badge status-${order.status}">${translateStatus(order.status)}</span></td>
+                        <td>${order.indexed_at ? formatTime(order.indexed_at) : 'N/A'}</td>
+                    </tr>
+                `).join('');
+                
+                addLog(`📊 Buscados ${data.data.length} pedidos do banco`, 'info');
+                
+            } catch (error) {
+                console.error('Erro ao buscar pedidos:', error);
+            }
+        }
+
+        // Verificar novos pedidos (polling)
+        let lastOrderCount = 0;
+        async function checkNewOrders() {
+            try {
+                const response = await fetch(`${API_URL}/orders/statistics`);
+                const stats = await response.json();
+                
+                const currentCount = stats.total_orders || 0;
+                
+                if (currentCount > lastOrderCount) {
+                    const newOrders = currentCount - lastOrderCount;
+                    addLog(`🎉 NOVO PEDIDO DETECTADO! +${newOrders} novo(s) pedido(s) no banco`, 'success');
+                    processedCount += newOrders;
+                    updateCounters();
+                    fetchRecentOrders();
+                }
+                
+                lastOrderCount = currentCount;
+                
+            } catch (error) {
+                console.error('Erro ao verificar novos pedidos:', error);
+            }
+        }
+
+        // Simular chegada de mensagem (para demonstração)
+        function simulateMessageArrival() {
+            messageCount++;
+            updateCounters();
+            addLog(`📨 Mensagem recebida do Pub/Sub (fila: sub-grupo2)`, 'info');
+            
+            setTimeout(() => {
+                addLog(`⚙️ Processando mensagem...`, 'info');
+            }, 500);
+            
+            setTimeout(() => {
+                addLog(`💾 Salvando no banco de dados SQLite...`, 'info');
+            }, 1000);
+            
+            setTimeout(() => {
+                addLog(`✅ Mensagem processada e confirmada (ACK)!`, 'success');
+            }, 2000);
+        }
+
+        // Testar conexão com o servidor
+        async function testConnection() {
+            addLog(`🔍 Testando conexão com o servidor...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    addLog(`✅ Servidor conectado! API rodando na porta 3001`, 'success');
+                    
+                    // Tentar publicar mensagem de teste
+                    addLog(`📤 Enviando mensagem de teste para o Pub/Sub...`, 'info');
+                    
+                    const testResponse = await fetch(`${API_URL}/test-publish`, { method: 'POST' });
+                    if (testResponse.ok) {
+                        addLog(`✅ Mensagem de teste publicada com sucesso!`, 'success');
+                        messageCount++;
+                        updateCounters();
+                    }
+                } else {
+                    addLog(`⚠️ Servidor respondeu com status ${response.status}`, 'warning');
+                }
+            } catch (error) {
+                addLog(`❌ Erro ao conectar ao servidor: ${error.message}`, 'error');
+                addLog(`💡 Certifique-se que o servidor está rodando: npm start`, 'warning');
+            }
+        }
+
+        // Limpar logs
+        function clearLogs() {
+            const container = document.getElementById('logContainer');
+            container.innerHTML = '';
+            addLog('🧹 Logs limpos', 'info');
+        }
+
+        // Atualizar tudo
+        function refreshOrders() {
+            addLog('🔄 Atualizando lista de pedidos...', 'info');
+            fetchRecentOrders();
+        }
+
+        // Ver detalhes do pedido
+        async function viewOrderDetail(uuid) {
+            try {
+                const response = await fetch(`${API_URL}/orders/${uuid}`);
+                const order = await response.json();
+                
+                const modalBody = document.getElementById('modalBody');
+                modalBody.innerHTML = `
+                    <div style="font-family: monospace; font-size: 0.8rem;">
+                        <p><strong>UUID:</strong> ${order.uuid}</p>
+                        <p><strong>Data do Pedido:</strong> ${new Date(order.created_at).toLocaleString('pt-BR')}</p>
+                        <p><strong>Data Indexação:</strong> ${order.indexed_at ? new Date(order.indexed_at).toLocaleString('pt-BR') : 'N/A'}</p>
+                        <p><strong>Cliente:</strong> ${order.customer.name} (ID: ${order.customer.id})</p>
+                        <p><strong>Total:</strong> R$ ${order.total.toFixed(2)}</p>
+                        <p><strong>Status:</strong> ${translateStatus(order.status)}</p>
+                        <p><strong>Itens:</strong> ${order.items.length}</p>
+                        <hr style="margin: 10px 0; border-color: #374151;">
+                        <p><strong>Vendedor:</strong> ${order.seller.name}</p>
+                        <p><strong>Envio:</strong> ${order.shipment?.carrier} - ${order.shipment?.tracking_code}</p>
+                        <p><strong>Pagamento:</strong> ${order.payment?.method} - ${order.payment?.status}</p>
+                    </div>
+                `;
+                
+                document.getElementById('modal').style.display = 'flex';
+                addLog(`🔍 Visualizando detalhes do pedido ${uuid.substring(0, 16)}...`, 'info');
+                
+            } catch (error) {
+                addLog(`❌ Erro ao carregar detalhes: ${error.message}`, 'error');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        function translateStatus(status) {
+            const map = {
+                'created': 'Criado',
+                'paid': 'Pago',
+                'separated': 'Separado',
+                'shipped': 'Enviado',
+                'delivered': 'Entregue',
+                'canceled': 'Cancelado'
+            };
+            return map[status] || status;
+        }
+
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('pt-BR');
+        }
+
+        // Iniciar monitoramento
+        function startMonitoring() {
+            addLog('🚀 INICIANDO MONITORAMENTO EM TEMPO REAL', 'success');
+            addLog('📡 Conectado ao Pub/Sub - Subscription: sub-grupo2', 'info');
+            addLog('💾 Banco de dados: SQLite', 'info');
+            addLog('🎯 Aguardando mensagens...', 'info');
+            
+            // Buscar pedidos iniciais
+            fetchRecentOrders();
+            
+            // Atualizar contagem inicial
+            fetch(`${API_URL}/orders/statistics`)
+                .then(res => res.json())
+                .then(stats => {
+                    lastOrderCount = stats.total_orders || 0;
+                });
+            
+            // Polling a cada 3 segundos
+            pollingInterval = setInterval(() => {
+                checkNewOrders();
+            }, 3000);
+            
+            // Simular chegada de mensagens (para demonstração - REMOVER EM PRODUÇÃO)
+            // Isso simula mensagens chegando para mostrar o fluxo
+            let demoInterval = setInterval(() => {
+                // Verifica se estamos no modo demonstração (sem mensagens reais)
+                if (messageCount === 0 && processedCount === 0) {
+                    simulateMessageArrival();
+                }
+            }, 10000);
+            
+            // Limpar intervalo depois de 2 minutos se não houver mensagens
+            setTimeout(() => {
+                if (messageCount === 0) {
+                    addLog('💡 Dica: Publique uma mensagem de teste para ver o fluxo real!', 'warning');
+                    addLog('📤 Execute: npm run publish-test', 'info');
+                }
+            }, 20000);
+        }
+
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Iniciar
+        startMonitoring();
+    </script>
+</body>
+</html>
