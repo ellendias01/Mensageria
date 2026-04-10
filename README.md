@@ -117,7 +117,7 @@ projeto-mensageria/
 <h3 align="center">🗄️ Diagrama do Banco de Dados (DER)</h3>
 
 <p align="center">
-  <img src="database/database_der.png" width="600"/>
+  <img src="docs/database/database_der.png" width="600"/>
 </p>
 
 ---
@@ -266,9 +266,10 @@ npm run test-connection
 ---
 👥 Autores
 
-Éllen Dias Farias    	
-Habbiner Andrade	   
-Gabriel Abramovick 
+
+Éllen Dias Farias — [@ellendias01](https://github.com/ellendias01) <br>
+Habbiner Andrade — [@habbiner](https://github.com/habbiner) <br>
+Gabriel Abramovick Bortoliero — [@Bortoliero](https://github.com/Bortoliero)
 
 ---
 
