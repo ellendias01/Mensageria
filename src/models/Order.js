@@ -4,22 +4,19 @@ class Order {
   static async create(orderData) {
     const db = await getDatabase();
     
-    // Inserir cliente
-    await db.run(`
-      INSERT OR REPLACE INTO customers (id, name, email, document)
-      VALUES (?, ?, ?, ?)
-    `, [orderData.customer.id, orderData.customer.name, 
-         orderData.customer.email, orderData.customer.document]);
+    // ⚠️ IMPORTANTE: NÃO colocar BEGIN TRANSACTION aqui!
+    // A transação já é controlada pelo OrderService
     
-    // Inserir pedido com received_at e indexed_at
+    // Inserir pedido
     await db.run(`
-      INSERT INTO orders (uuid, created_at, received_at, indexed_at, channel, status, customer_id, 
-                         seller_id, seller_name, seller_city, seller_state, total)
+      INSERT INTO orders (uuid, created_at, received_at, channel, status, customer_id, 
+                         seller_id, seller_name, seller_city, seller_state, total, indexed_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [orderData.uuid, orderData.created_at, new Date().toISOString(), new Date().toISOString(), 
-         orderData.channel, orderData.status, orderData.customer.id,
+    `, [orderData.uuid, orderData.created_at, orderData.received_at || null, orderData.channel, 
+         orderData.status, orderData.customer.id,
          orderData.seller.id, orderData.seller.name, 
-         orderData.seller.city, orderData.seller.state, orderData.total]);
+         orderData.seller.city, orderData.seller.state, orderData.total,
+         new Date().toISOString()]);
     
     // Inserir shipment
     if (orderData.shipment) {

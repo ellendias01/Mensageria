@@ -83,7 +83,7 @@ projeto-mensageria/
 │   ├── postman/
 │   │   └── Mensageria.postman_collection.json
 │   └── database/ 
-│   │   └── database_der.png
+│       └── database_der.png
 ├── public/
 │   ├── index.html
 │   ├── style.css
@@ -113,31 +113,12 @@ projeto-mensageria/
 
 ---
 
-## 🗄️ Modelo de Dados (DER)
+## 
+<h3 align="center">🗄️ Diagrama do Banco de Dados (DER)</h3>
 
-```text
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ customers   │     │ orders      │     │ products    │
-├─────────────┤     ├─────────────┤     ├─────────────┤
-│ id (PK)     │◄────│ customer_id │     │ id (PK)     │
-│ name        │     │ uuid (PK)   │     │ name        │
-│ email       │     │ created_at  │     │ unit_price  │
-│ document    │     │ status      │     └─────────────┘
-└─────────────┘     │ total       │
-                    └─────────────┘
-                           ▲
-                           │
-                    ┌─────────────┐
-                    │ order_items │
-                    ├─────────────┤
-                    │ id (PK)     │
-                    │ order_uuid  │
-                    │ product_id  │
-                    │ quantity    │
-                    │ unit_price  │
-                    │ total       │
-                    └─────────────┘
-```
+<p align="center">
+  <img src="database/database_der.png" width="600"/>
+</p>
 
 ---
 
@@ -283,8 +264,7 @@ npm run test-connection
 * `.gitignore` configurado
 
 ---
-
-## 👥 Autora
+👥 Autores
 
 Éllen Dias Farias    	
 Habbiner Andrade	   

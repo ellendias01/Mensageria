@@ -73,7 +73,13 @@ async function processMessage(message) {
     // Processar pedido
     console.log(`\n🔄 Processando pedido...`);
     const result = await OrderService.processOrder(orderData);
-    
+    // ✅ DUPLICADO → NÃO REPROCESSA
+    if (result.already_exists) {
+      console.log(`\n⚠️ Pedido duplicado - ignorando`);
+      console.log(`✅ Mensagem confirmada (ACK)`);
+      message.ack();
+      return;
+    }
     if (result.success) {
       console.log(`\n✅ PEDIDO PROCESSADO COM SUCESSO!`);
       console.log(`   💵 Total do pedido: R$ ${result.total.toFixed(2)}`);
@@ -92,6 +98,11 @@ async function processMessage(message) {
   } catch (error) {
     console.error(`\n❌ ERRO AO PROCESSAR MENSAGEM:`);
     console.error(`   ${error.message}`);
+    if (error.message.includes('UNIQUE constraint')) {
+    console.log(`\n⚠️ Duplicado detectado - ACK`);
+    message.ack();
+    return;
+  }
     console.log(`\n⚠️ Mensagem será reenviada (NACK)...`);
     message.nack();
   }
