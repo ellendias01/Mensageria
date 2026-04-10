@@ -278,11 +278,11 @@ npm run test-connection
 * `.gitignore` configurado
 
 ---
+👥 Autores
 
-## 👥 Autora
-
-Éllen Dias Farias    	
-Habbiner Andrade	   
+Éllen Dias Farias — [@ellendias01](https://github.com/ellendias01) <br>
+Habbiner Andrade — [@habbiner](https://github.com/habbiner) <br>
+Gabriel Abramovick Bortoliero — [@Bortoliero](https://github.com/Bortoliero)
 
 ---
 
