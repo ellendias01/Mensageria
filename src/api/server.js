@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const ordersRouter = require('./routes/orders');
 const customersRouter = require('./routes/customers');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('../../docs/api/swagger.json');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -12,6 +14,7 @@ app.use(express.json());
 
 // Servir arquivos estáticos do frontend
 app.use(express.static(path.join(__dirname, '../../public')));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Rotas da API
 app.use('/orders', ordersRouter);

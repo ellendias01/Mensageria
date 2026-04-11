@@ -79,6 +79,11 @@ projeto-mensageria/
 ├── database/
 │   ├── database.sqlite
 │   └── shema.sql
+├── docs/
+│   ├── postman/
+│   │   └── Mensageria.postman_collection.json
+│   └── database/ 
+│       └── database_der.png
 ├── public/
 │   ├── index.html
 │   ├── style.css
@@ -108,31 +113,12 @@ projeto-mensageria/
 
 ---
 
-## 🗄️ Modelo de Dados (DER)
+## 
+<h3 align="center">🗄️ Diagrama do Banco de Dados (DER)</h3>
 
-```text
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ customers   │     │ orders      │     │ products    │
-├─────────────┤     ├─────────────┤     ├─────────────┤
-│ id (PK)     │◄────│ customer_id │     │ id (PK)     │
-│ name        │     │ uuid (PK)   │     │ name        │
-│ email       │     │ created_at  │     │ unit_price  │
-│ document    │     │ status      │     └─────────────┘
-└─────────────┘     │ total       │
-                    └─────────────┘
-                           ▲
-                           │
-                    ┌─────────────┐
-                    │ order_items │
-                    ├─────────────┤
-                    │ id (PK)     │
-                    │ order_uuid  │
-                    │ product_id  │
-                    │ quantity    │
-                    │ unit_price  │
-                    │ total       │
-                    └─────────────┘
-```
+<p align="center">
+  <img src="docs/database/database_der.png" width="600"/>
+</p>
 
 ---
 
@@ -278,11 +264,12 @@ npm run test-connection
 * `.gitignore` configurado
 
 ---
+👥 Autores
 
-## 👥 Autora
 
-Éllen Dias Farias    	
-Habbiner Andrade	   
+Éllen Dias Farias — [@ellendias01](https://github.com/ellendias01) <br>
+Habbiner Andrade — [@habbiner](https://github.com/habbiner) <br>
+Gabriel Abramovick Bortoliero — [@Bortoliero](https://github.com/Bortoliero)
 
 ---
 
@@ -301,6 +288,17 @@ MIT (uso acadêmico)
 | npm run mock-consumer | Teste           |
 | npm run check-db      | Ver banco       |
 | npm run init-db       | Reset DB        |
+
+---
+
+## 🚀 Como Testar a API (Postman)
+
+Para facilitar os testes dos endpoints, disponibilizamos uma coleção do Postman pronta para uso.
+
+1.  Localize o arquivo em: `docs/postman/Mensageria.postman_collection.json`.
+2.  No Postman, clique em **Import** e selecione este arquivo.
+3.  Certifique-se de que o servidor está rodando (`npm start`).
+4.  A variável `{{base_url}}` já está configurada para `http://localhost:3001`.
 
 ---
 

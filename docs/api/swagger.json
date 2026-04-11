@@ -1,0 +1,86 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Mensageria API",
+    "version": "1.0.0",
+    "description": "Documentação interativa da API do sistema de Mensageria e Gerenciamento de Pedidos."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Servidor Local"
+    }
+  ],
+  "paths": {
+    "/orders": {
+      "get": {
+        "summary": "Listar todos os pedidos",
+        "tags": ["Pedidos"],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Lista de pedidos retornada com sucesso." }
+        }
+      }
+    },
+    "/orders/statistics": {
+      "get": {
+        "summary": "Obter estatísticas de vendas",
+        "tags": ["Pedidos"],
+        "responses": {
+          "200": { "description": "Estatísticas calculadas com sucesso." }
+        }
+      }
+    },
+    "/orders/{uuid}": {
+      "get": {
+        "summary": "Obter detalhes de um pedido específico",
+        "tags": ["Pedidos"],
+        "parameters": [
+          { "name": "uuid", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Detalhes do pedido encontrados." },
+          "404": { "description": "Pedido não encontrado." }
+        }
+      }
+    },
+    "/orders/{uuid}/status": {
+      "patch": {
+        "summary": "Atualizar o status de um pedido",
+        "tags": ["Pedidos"],
+        "parameters": [
+          { "name": "uuid", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string", "example": "paid" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status atualizado com sucesso." }
+        }
+      }
+    },
+    "/customers": {
+      "get": {
+        "summary": "Listar todos os clientes",
+        "tags": ["Clientes"],
+        "responses": {
+          "200": { "description": "Lista de clientes retornada." }
+        }
+      }
+    }
+  }
+}
