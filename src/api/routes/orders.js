@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
     if (uuid) filters.uuid = uuid;
     
     // Validar orderBy para evitar SQL injection
-    const validOrderFields = ['created_at', 'uuid', 'status', 'total'];
+    const validOrderFields = ['created_at', 'uuid', 'status', 'total', 'indexed_at'];
     const finalOrderBy = validOrderFields.includes(orderBy) ? orderBy : 'created_at';
     
     const result = await OrderService.listOrders(

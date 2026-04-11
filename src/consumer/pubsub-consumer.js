@@ -41,8 +41,9 @@ let isConnected = false;
 async function processMessage(message) {
   try {
     messageCount++;
-    const receivedAt = new Date();
-    
+    const receivedAt = new Date().toISOString();
+    const indexedAt = new Date().toISOString();
+
     console.log('\n' + '='.repeat(60));
     console.log(`📨 MENSAGEM #${messageCount}`);
     console.log('='.repeat(60));
@@ -52,7 +53,9 @@ async function processMessage(message) {
     
     // Parse da mensagem
     const orderData = JSON.parse(message.data.toString());
-    
+    orderData.received_at = receivedAt;
+    orderData.indexed_at = indexedAt;
+
     console.log(`\n📋 DADOS DO PEDIDO:`);
     console.log(`   UUID: ${orderData.uuid}`);
     console.log(`   Canal: ${orderData.channel}`);

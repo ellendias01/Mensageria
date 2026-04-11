@@ -12,11 +12,11 @@ class Order {
       INSERT INTO orders (uuid, created_at, received_at, channel, status, customer_id, 
                          seller_id, seller_name, seller_city, seller_state, total, indexed_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [orderData.uuid, orderData.created_at, orderData.received_at || null, orderData.channel, 
-         orderData.status, orderData.customer.id,
-         orderData.seller.id, orderData.seller.name, 
-         orderData.seller.city, orderData.seller.state, orderData.total,
-         new Date().toISOString()]);
+    `,  [orderData.uuid, orderData.created_at, receivedAt, orderData.channel, 
+       orderData.status, orderData.customer.id,
+       orderData.seller.id, orderData.seller.name, 
+       orderData.seller.city, orderData.seller.state, orderData.total,
+       indexedAt]);
     
     // Inserir shipment
     if (orderData.shipment) {

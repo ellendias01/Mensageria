@@ -10,7 +10,9 @@
     "init-db": "node src/config/initDB.js",
     "setup-pubsub": "node src/config/setup-pubsub.js",
     "test-connection": "node src/config/test-connection.js",
-    "check-messages": "node src/config/check-messages.js"
+    "check-messages": "node src/config/check-messages.js",
+    "check-db": "node src/config/check-db.js",
+    "test-received-at": "node src/config/test-received-at.js"
   },
   "dependencies": {
     "@google-cloud/pubsub": "^4.0.0",

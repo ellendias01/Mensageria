@@ -67,6 +67,7 @@ class OrderService {
         console.log(`\n📦 PROCESSANDO PEDIDO: ${orderData.uuid}`);
 
         if (orderData.received_at) {
+          orderData.received_at = new Date().toISOString();
           console.log(`📅 Recebido em: ${new Date(orderData.received_at).toLocaleString()}`);
         }
 
@@ -93,7 +94,11 @@ class OrderService {
 
         try {
           // 4. pedido
-          await Order.create(orderData);
+           await Order.create({
+      ...orderData,
+      received_at: orderData.received_at,  // Garantir que está sendo passado
+      indexed_at: new Date().toISOString()
+    })
 
           // 5. itens
           for (const item of orderData.items) {

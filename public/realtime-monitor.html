@@ -440,7 +440,7 @@
         // Buscar pedidos recentes
         async function fetchRecentOrders() {
             try {
-                const response = await fetch(`${API_URL}/orders?limit=10&orderBy=created_at&orderDir=DESC`);
+                const response = await fetch(`${API_URL}/orders?limit=10&orderBy=indexed_at&orderDir=DESC`);
                 const data = await response.json();
                 
                 const tbody = document.getElementById('ordersTableBody');
