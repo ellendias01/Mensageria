@@ -16,6 +16,68 @@ const pubsub = new PubSub({
 // Nome do tópico (conforme o professor configurou)
 const TOPIC_NAME = 'aula-demo-pub';
 
+function generateTestOrder() {
+  const uuid =
+    `ORD-DEMO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const customer = {
+    id: Math.floor(Math.random() * 9000) + 1000,
+    name: 'Cliente Demo',
+    email: 'cliente.demo@email.com',
+    document: '111.222.333-44'
+  };
+
+  const seller = {
+    id: 55,
+    name: 'Tech Store',
+    city: 'São Paulo',
+    state: 'SP'
+  };
+
+  const items = [
+    {
+      id: 1,
+      product_id: Math.floor(Math.random() * 1000) + 9000,
+      product_name: 'Produto Demo',
+      unit_price: 199.9,
+      quantity: 2,
+      category: {
+        id: 'DEMO',
+        name: 'Demonstração',
+        sub_category: { id: 'SUB', name: 'Teste' }
+      }
+    }
+  ];
+
+  return {
+    uuid,
+    created_at: new Date().toISOString(),
+    channel: 'web',
+    status: 'created',
+    customer,
+    seller,
+    items,
+    shipment: {
+      carrier: 'Correios',
+      service: 'PAC',
+      status: 'pending',
+      tracking_code: `DEMO${Date.now()}`
+    },
+    payment: {
+      method: 'pix',
+      status: 'pending',
+      transaction_id: `PAY${Math.random()
+        .toString(36)
+        .slice(2, 10)}`
+    },
+    metadata: {
+      source: 'test-connection',
+      user_agent: 'Test Connection',
+      ip_address: '127.0.0.1'
+    }
+  };
+}
+
 
 async function publishTestMessage() {
   try {

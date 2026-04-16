@@ -6,11 +6,14 @@ package-lock.json
 *.sqlite
 *.sqlite3
 database/*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal
+database/*.sqlite-*
 
 # Arquivos de ambiente
 .env
 service-account.json
-echo "service-account.json" >> .gitignore
 
 # Logs
 logs/

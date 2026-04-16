@@ -1,13 +1,20 @@
 // check-orders.js - Colocar na raiz do projeto
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
-const path = require('path');
+require('dotenv').config();
+const mysql = require('mysql2/promise');
+
+function getEnv(name, fallback) {
+  const value = process.env[name];
+  return value === undefined || value === '' ? fallback : value;
+}
 
 async function checkOrders() {
   try {
-    const db = await open({
-      filename: path.join(__dirname, 'database/database.sqlite'),
-      driver: sqlite3.Database
+    const connection = await mysql.createConnection({
+      host: getEnv('MYSQL_HOST', '127.0.0.1'),
+      port: Number(getEnv('MYSQL_PORT', '3306')),
+      user: getEnv('MYSQL_USER', 'root'),
+      password: getEnv('MYSQL_PASSWORD', ''),
+      database: getEnv('MYSQL_DATABASE', undefined)
     });
     
     console.log('='.repeat(60));
@@ -15,11 +22,12 @@ async function checkOrders() {
     console.log('='.repeat(60));
     
     // Total de pedidos
-    const total = await db.get('SELECT COUNT(*) as total FROM orders');
+    const [totalRows] = await connection.execute('SELECT COUNT(*) as total FROM orders');
+    const total = totalRows && totalRows.length ? totalRows[0] : { total: 0 };
     console.log(`\n📦 Total de pedidos: ${total.total}`);
     
     // Últimos 10 pedidos
-    const recentes = await db.all(`
+    const [recentes] = await connection.execute(`
       SELECT uuid, indexed_at, received_at, customer_id, total, status 
       FROM orders 
       ORDER BY indexed_at DESC 
@@ -32,16 +40,16 @@ async function checkOrders() {
       console.log(`   Processado: ${order.indexed_at}`);
       console.log(`   Recebido na fila: ${order.received_at || 'NULL ❌'}`);
       console.log(`   Cliente ID: ${order.customer_id}`);
-      console.log(`   Total: R$ ${(order.total || 0).toFixed(2)}`);
+      console.log(`   Total: R$ ${(Number(order.total) || 0).toFixed(2)}`);
       console.log(`   Status: ${order.status}`);
     }
     
     // Verificar pedidos de hoje
     const hoje = new Date().toISOString().split('T')[0];
-    const pedidosHoje = await db.all(`
+    const [pedidosHoje] = await connection.execute(`
       SELECT uuid, indexed_at, total 
       FROM orders 
-      WHERE DATE(indexed_at) = DATE('now')
+      WHERE DATE(indexed_at) = CURDATE()
       ORDER BY indexed_at DESC
     `);
     
@@ -51,9 +59,10 @@ async function checkOrders() {
     }
     
     // Verificar received_at nulos
-    const nullReceived = await db.get(`
+    const [nullRows] = await connection.execute(`
       SELECT COUNT(*) as total FROM orders WHERE received_at IS NULL
     `);
+    const nullReceived = nullRows && nullRows.length ? nullRows[0] : { total: 0 };
     console.log(`\n⚠️ Pedidos com received_at NULL: ${nullReceived.total}`);
     
     // Verificar os pedidos específicos que você mostrou no log
@@ -67,7 +76,11 @@ async function checkOrders() {
     
     console.log('\n🔍 VERIFICANDO PEDIDOS ESPECÍFICOS DO LOG:');
     for (const uuid of uuids) {
-      const order = await db.get('SELECT uuid, indexed_at, received_at FROM orders WHERE uuid = ?', uuid);
+      const [rows] = await connection.execute(
+        'SELECT uuid, indexed_at, received_at FROM orders WHERE uuid = ?',
+        [uuid]
+      );
+      const order = rows && rows.length ? rows[0] : null;
       if (order) {
         console.log(`   ✅ ${uuid.substring(0, 20)}... - Processado em: ${order.indexed_at}`);
       } else {
@@ -75,7 +88,7 @@ async function checkOrders() {
       }
     }
     
-    await db.close();
+    await connection.end();
     
   } catch (error) {
     console.error('❌ Erro:', error.message);

@@ -1,5 +1,5 @@
 const OrderService = require('../services/orderService');
-const { getDatabase } = require('../config/database');
+const { getPool } = require('../config/database');
 
 console.log('='.repeat(60));
 console.log('🎭 CONSUMIDOR MOCK - MODO DE TESTE');
@@ -140,23 +140,26 @@ async function processMockOrders() {
   console.log('='.repeat(60));
   
   // Verificar dados no banco
-  const db = await getDatabase();
-  const orderCount = await db.get('SELECT COUNT(*) as total FROM orders');
-  const customerCount = await db.get('SELECT COUNT(*) as total FROM customers');
-  const productCount = await db.get('SELECT COUNT(*) as total FROM products');
-  const totalValue = await db.get('SELECT SUM(total) as total FROM orders');
+  const db = await getPool();
+  const [orderRows] = await db.execute('SELECT COUNT(*) as total FROM orders');
+  const [customerRows] = await db.execute('SELECT COUNT(*) as total FROM customers');
+  const [productRows] = await db.execute('SELECT COUNT(*) as total FROM products');
+  const [valueRows] = await db.execute('SELECT SUM(total) as total FROM orders');
+  const orderCount = orderRows && orderRows.length ? orderRows[0] : { total: 0 };
+  const customerCount = customerRows && customerRows.length ? customerRows[0] : { total: 0 };
+  const productCount = productRows && productRows.length ? productRows[0] : { total: 0 };
+  const totalValue = valueRows && valueRows.length ? valueRows[0] : { total: 0 };
   
   console.log('\n📈 ESTATÍSTICAS DO BANCO DE DADOS:');
   console.log(`   📦 Pedidos: ${orderCount.total}`);
   console.log(`   👥 Clientes: ${customerCount.total}`);
   console.log(`   📱 Produtos: ${productCount.total}`);
-  console.log(`   💰 Valor total: R$ ${(totalValue.total || 0).toFixed(2)}`);
+  console.log(`   💰 Valor total: R$ ${(Number(totalValue.total) || 0).toFixed(2)}`);
   console.log('\n✅ Processamento MOCK concluído!');
   console.log('💡 Agora você pode testar a API:');
   console.log('   curl http://localhost:3001/orders');
   console.log('   curl http://localhost:3001/orders/statistics\n');
   
-  await db.close();
 }
 
 // Executar

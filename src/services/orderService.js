@@ -2,7 +2,7 @@ const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const Product = require('../models/Product');
 const ItemPedido = require('../models/ItemPedido');
-const { getDatabase } = require('../config/database');
+const { getPool, withTransaction } = require('../config/database');
 
 class OrderService {
 
@@ -17,17 +17,12 @@ class OrderService {
       } catch (error) {
 
         // ✅ duplicado = ignora
-        if (error.message && error.message.includes('UNIQUE constraint failed')) {
+        if (
+          (error && error.code === 'ER_DUP_ENTRY') ||
+          (error && error.message && error.message.includes('Duplicate entry'))
+        ) {
           console.log(`⚠️ Pedido duplicado detectado, ignorando...`);
           return { success: true, already_exists: true };
-        }
-
-        // 🔒 banco ocupado
-        if (error.message && error.message.includes('SQLITE_BUSY') && i < retries - 1) {
-          const waitTime = delay * Math.pow(2, i);
-          console.log(`⏳ Banco ocupado, retry ${i + 1}/${retries} em ${waitTime}ms`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
         }
 
         throw error;
@@ -37,8 +32,7 @@ class OrderService {
 
   static async processOrder(orderData) {
     return this.withRetry(async () => {
-
-      const db = await getDatabase();
+      const db = await getPool();
 
       // 🔒 evita concorrência
       while (this.processing) {
@@ -50,10 +44,11 @@ class OrderService {
 
       try {
         // ✅ evitar duplicidade antes de tudo
-        const existingOrder = await db.get(
+        const [existingRows] = await db.execute(
           'SELECT uuid FROM orders WHERE uuid = ?',
           [orderData.uuid]
         );
+        const existingOrder = existingRows && existingRows.length ? existingRows[0] : null;
 
         if (existingOrder) {
           console.log(`⚠️ Pedido ${orderData.uuid} já existe. Ignorando.`);
@@ -67,8 +62,9 @@ class OrderService {
         console.log(`\n📦 PROCESSANDO PEDIDO: ${orderData.uuid}`);
 
         if (orderData.received_at) {
-          orderData.received_at = new Date().toISOString();
-          console.log(`📅 Recebido em: ${new Date(orderData.received_at).toLocaleString()}`);
+          console.log(
+            `📅 Recebido em: ${new Date(orderData.received_at).toLocaleString()}`
+          );
         }
 
         // 1. calcular totais
@@ -89,38 +85,34 @@ class OrderService {
           });
         }
 
-        // 🔥 TRANSAÇÃO SEGURA
-        await db.exec('BEGIN IMMEDIATE');
+        const indexedAt = new Date().toISOString();
 
-        try {
+        // 🔥 TRANSAÇÃO (MySQL)
+        await withTransaction(async (conn) => {
           // 4. pedido
-           await Order.create({
-      ...orderData,
-      received_at: orderData.received_at,  // Garantir que está sendo passado
-      indexed_at: new Date().toISOString()
-    })
+          await Order.create(
+            {
+              ...orderData,
+              received_at: orderData.received_at || null,
+              indexed_at: indexedAt
+            },
+            conn
+          );
 
           // 5. itens
           for (const item of orderData.items) {
-            await ItemPedido.create({
-              order_uuid: orderData.uuid,
-              product_id: item.product_id,
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              total: item.total
-            });
+            await ItemPedido.create(
+              {
+                order_uuid: orderData.uuid,
+                product_id: item.product_id,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                total: item.total
+              },
+              conn
+            );
           }
-
-          // ✅ commit
-          await db.exec('COMMIT');
-
-        } catch (error) {
-          console.log("💥 Erro dentro da transação, fazendo ROLLBACK...");
-          await db.exec('ROLLBACK');
-          throw error;
-        }
-
-        const indexedAt = new Date().toISOString();
+        });
 
         console.log(`✅ Pedido ${orderData.uuid} processado!`);
         console.log(`💰 Total: R$ ${orderTotal.toFixed(2)}`);
@@ -182,9 +174,9 @@ class OrderService {
   }
 
   static async getStatistics() {
-    const db = await getDatabase();
+    const db = await getPool();
 
-    return await db.get(`
+    const [rows] = await db.execute(`
       SELECT 
         COUNT(*) as total_orders,
         SUM(total) as total_amount,
@@ -197,10 +189,12 @@ class OrderService {
         SUM(CASE WHEN status = 'canceled' THEN 1 ELSE 0 END) as canceled
       FROM orders
     `);
+
+    return rows && rows.length ? rows[0] : null;
   }
 
   static async updateOrderStatus(uuid, newStatus) {
-    const db = await getDatabase();
+    const db = await getPool();
 
     const validStatus = ['created', 'paid', 'separated', 'shipped', 'delivered', 'canceled'];
 
@@ -208,7 +202,7 @@ class OrderService {
       throw new Error('Status inválido');
     }
 
-    await db.run(
+    await db.execute(
       `UPDATE orders SET status = ? WHERE uuid = ?`,
       [newStatus, uuid]
     );

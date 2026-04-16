@@ -399,7 +399,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3001';
+        const API_URL = window.location.origin;
         let messageCount = 0;
         let processedCount = 0;
         let errorCount = 0;
@@ -502,7 +502,7 @@
             }, 500);
             
             setTimeout(() => {
-                addLog(`💾 Salvando no banco de dados SQLite...`, 'info');
+                addLog(`💾 Salvando no banco de dados MySQL...`, 'info');
             }, 1000);
             
             setTimeout(() => {
@@ -517,7 +517,7 @@
             try {
                 const response = await fetch(`${API_URL}/health`);
                 if (response.ok) {
-                    addLog(`✅ Servidor conectado! API rodando na porta 3001`, 'success');
+                    addLog(`✅ Servidor conectado! API ok`, 'success');
                     
                     // Tentar publicar mensagem de teste
                     addLog(`📤 Enviando mensagem de teste para o Pub/Sub...`, 'info');
@@ -606,7 +606,7 @@
         function startMonitoring() {
             addLog('🚀 INICIANDO MONITORAMENTO EM TEMPO REAL', 'success');
             addLog('📡 Conectado ao Pub/Sub - Subscription: sub-grupo2', 'info');
-            addLog('💾 Banco de dados: SQLite', 'info');
+            addLog('💾 Banco de dados: MySQL', 'info');
             addLog('🎯 Aguardando mensagens...', 'info');
             
             // Buscar pedidos iniciais

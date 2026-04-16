@@ -6,10 +6,10 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.18-blue.svg)](https://expressjs.com/)
-[![SQLite](https://img.shields.io/badge/SQLite-3-blue.svg)](https://www.sqlite.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-8-blue.svg)](https://www.mysql.com/)
 [![Google Cloud Pub/Sub](https://img.shields.io/badge/Google%20Cloud-Pub%2FSub-orange.svg)](https://cloud.google.com/pubsub)
 
-> Sistema completo de processamento de pedidos com consumo de mensagens via Google Cloud Pub/Sub, persistência em SQLite e API RESTful.
+> Sistema completo de processamento de pedidos com consumo de mensagens via Google Cloud Pub/Sub, persistência em MySQL e API RESTful.
 
 ---
 
@@ -24,7 +24,7 @@ O sistema implementa um consumidor de mensagens do Google Cloud Pub/Sub para pro
 ## 🎯 Funcionalidades
 
 * ✅ Consumidor Pub/Sub (assíncrono): Processa mensagens assincronamente com sistema de ACK/NACK e logs detalhados
-* ✅ Persistência em SQLite: Modelo relacional completo no SQLite com tratamento de duplicidade (`INSERT OR REPLACE`)
+* ✅ Persistência em MySQL: Modelo relacional completo no MySQL com tratamento de duplicidade (`ON DUPLICATE KEY UPDATE`)
 * ✅ API RESTful completa: Endpoints para listar, filtrar, detalhar e atualizar pedidos e clientes
 * ✅ Paginação e filtros
 * ✅ Cálculo automático de totais
@@ -40,7 +40,7 @@ O sistema implementa um consumidor de mensagens do Google Cloud Pub/Sub para pro
 
 ```text
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│ Google Cloud    │     │ Consumidor       │     │ SQLite DB       │
+│ Google Cloud    │     │ Consumidor       │     │ MySQL DB        │
 │ Pub/Sub         │────▶│ (Node.js)        │────▶│ (Persistência)  │
 │ (Mensagens)     │     │                  │     │                 │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
@@ -66,7 +66,7 @@ O sistema implementa um consumidor de mensagens do Google Cloud Pub/Sub para pro
 | -------------------- | -------------------- |
 | Node.js              | Ambiente de execução |
 | Express.js           | API REST             |
-| SQLite3              | Banco de dados       |
+| MySQL                | Banco de dados       |
 | Google Cloud Pub/Sub | Mensageria           |
 | HTML/CSS/JS          | Frontend             |
 
@@ -77,8 +77,7 @@ O sistema implementa um consumidor de mensagens do Google Cloud Pub/Sub para pro
 ```text
 projeto-mensageria/
 ├── database/
-│   ├── database.sqlite
-│   └── shema.sql
+│   └── (artefatos locais; banco principal é MySQL)
 ├── docs/
 │   ├── postman/
 │   │   └── Mensageria.postman_collection.json
@@ -149,7 +148,14 @@ npm install
 
 ### 3. Configure o Google Cloud
 
-* Coloque o `service-account.json` na raiz do projeto
+* Coloque o `service-account.json` na raiz do projeto **(recomendado)**.
+* Alternativamente, defina a variável `GOOGLE_APPLICATION_CREDENTIALS` com o caminho do arquivo JSON.
+
+Exemplo (PowerShell):
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\Projects\Mensageria\service-account.json"
+```
 
 ---
 
@@ -174,7 +180,7 @@ Acesse: [http://localhost:3001](http://localhost:3001)
 Terminal 2:
 
 ```bash
-npm run consumer
+npm run pubsub-consumer
 ```
 
 Ou para testes:
@@ -243,6 +249,20 @@ npm run check-db
 npm run test-connection
 ```
 
+### Testar conexão MySQL
+
+1) Copie o arquivo de exemplo e preencha a senha:
+
+```bash
+copy .env.example .env
+```
+
+2) Rode o teste:
+
+```bash
+npm run test-mysql
+```
+
 ---
 
 ## 📊 Status dos Pedidos
@@ -284,10 +304,10 @@ MIT (uso acadêmico)
 | Comando               | Descrição       |
 | --------------------- | --------------- |
 | npm start             | API + Front     |
-| npm run consumer      | Consumidor real |
+| npm run pubsub-consumer | Consumidor real |
 | npm run mock-consumer | Teste           |
 | npm run check-db      | Ver banco       |
-| npm run init-db       | Reset DB        |
+| npm run init-db       | Inicializa schema |
 
 ---
 

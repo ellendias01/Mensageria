@@ -4,11 +4,19 @@ const fs = require('fs');
 const OrderService = require('../services/orderService');
 
 // Configurar credenciais:
-// 1) Usa GOOGLE_APPLICATION_CREDENTIALS, se já estiver definido.
+// 1) Usa GOOGLE_APPLICATION_CREDENTIALS (somente se o arquivo existir).
 // 2) Caso contrário, tenta service-account.json na raiz do projeto.
 const defaultCredPath = path.join(__dirname, '../../service-account.json');
-const configuredCredPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || defaultCredPath;
+const envCredPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+const configuredCredPath =
+  envCredPath && fs.existsSync(envCredPath) ? envCredPath : defaultCredPath;
 process.env.GOOGLE_APPLICATION_CREDENTIALS = configuredCredPath;
+
+if (envCredPath && !fs.existsSync(envCredPath) && fs.existsSync(defaultCredPath)) {
+  console.log(
+    `⚠️  GOOGLE_APPLICATION_CREDENTIALS aponta para arquivo inexistente:\n    ${envCredPath}\n   Usando: ${defaultCredPath}\n`
+  );
+}
 
 if (!fs.existsSync(configuredCredPath)) {
   console.log('='.repeat(60));
@@ -19,8 +27,8 @@ if (!fs.existsSync(configuredCredPath)) {
   console.log('   1. Coloque o arquivo de chave JSON do Google Cloud no caminho acima; OU');
   console.log('   2. Defina a variável GOOGLE_APPLICATION_CREDENTIALS com o caminho correto.');
   console.log('\nExemplo (PowerShell):');
-  console.log("   $env:GOOGLE_APPLICATION_CREDENTIALS='C:\\caminho\\service-account.json'");
-  console.log('   npm run consumer\n');
+  console.log(`   $env:GOOGLE_APPLICATION_CREDENTIALS='${defaultCredPath}'`);
+  console.log('   npm run pubsub-consumer\n');
   process.exit(1);
 }
 
@@ -32,7 +40,7 @@ const pubsub = new PubSub({
   projectId: 'serjava-demo'
 });
 
-const SUBSCRIPTION_NAME = 'sub-grupo2';  // Subscription que você tem
+const SUBSCRIPTION_NAME = 'sub-grupo2';
 const TOPIC_NAME = 'aula-demo-pub';
 
 let messageCount = 0;
@@ -76,7 +84,7 @@ async function processMessage(message) {
     // Processar pedido
     console.log(`\n🔄 Processando pedido...`);
     const result = await OrderService.processOrder(orderData);
-    // ✅ DUPLICADO → NÃO REPROCESSA
+    // DUPLICADO → NÃO REPROCESSA
     if (result.already_exists) {
       console.log(`\n⚠️ Pedido duplicado - ignorando`);
       console.log(`✅ Mensagem confirmada (ACK)`);
@@ -87,7 +95,7 @@ async function processMessage(message) {
       console.log(`\n✅ PEDIDO PROCESSADO COM SUCESSO!`);
       console.log(`   💵 Total do pedido: R$ ${result.total.toFixed(2)}`);
       console.log(`   🕒 Indexado em: ${result.indexed_at}`);
-      console.log(`   💾 Banco de dados: SQLite`);
+      console.log(`   💾 Banco de dados: MySQL`);
       
       // Confirmar mensagem
       message.ack();
@@ -101,11 +109,14 @@ async function processMessage(message) {
   } catch (error) {
     console.error(`\n❌ ERRO AO PROCESSAR MENSAGEM:`);
     console.error(`   ${error.message}`);
-    if (error.message.includes('UNIQUE constraint')) {
-    console.log(`\n⚠️ Duplicado detectado - ACK`);
-    message.ack();
-    return;
-  }
+    if (
+      (error && error.code === 'ER_DUP_ENTRY') ||
+      (error && error.message && error.message.includes('Duplicate entry'))
+    ) {
+      console.log(`\n⚠️ Duplicado detectado - ACK`);
+      message.ack();
+      return;
+    }
     console.log(`\n⚠️ Mensagem será reenviada (NACK)...`);
     message.nack();
   }
@@ -119,7 +130,6 @@ async function startConsumer() {
   try {
     // Obter a subscription diretamente (sem verificar existência)
     const subscription = pubsub.subscription(SUBSCRIPTION_NAME, {
-      // Configurações para melhor performance
       flowControl: {
         maxMessages: 10,
         allowExcessMessages: true
