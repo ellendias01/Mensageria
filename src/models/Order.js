@@ -3,16 +3,15 @@ const { getDatabase } = require('../config/database');
 class Order {
   static async create(orderData) {
     const db = await getDatabase();
-    
-    // ⚠️ IMPORTANTE: NÃO colocar BEGIN TRANSACTION aqui!
-    // A transação já é controlada pelo OrderService
-    
+     // Pega os valores do orderData (já foram definidos no processMessage)
+    const receivedAt = orderData.received_at;  
+    const indexedAt = orderData.indexed_at || new Date().toISOString();  
     // Inserir pedido
     await db.run(`
-      INSERT INTO orders (uuid, created_at, received_at, channel, status, customer_id, 
-                         seller_id, seller_name, seller_city, seller_state, total, indexed_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,  [orderData.uuid, orderData.created_at, receivedAt, orderData.channel, 
+    INSERT INTO orders (uuid, created_at, received_at, channel, status, customer_id, 
+                       seller_id, seller_name, seller_city, seller_state, total, indexed_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `,  [orderData.uuid, orderData.created_at, receivedAt, orderData.channel, 
        orderData.status, orderData.customer.id,
        orderData.seller.id, orderData.seller.name, 
        orderData.seller.city, orderData.seller.state, orderData.total,

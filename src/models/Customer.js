@@ -104,6 +104,39 @@ class Customer {
       throw error;
     }
   }
+  static async createOrUpdate(customerData) {
+  const db = await getDatabase();
+  
+  console.log(`🔍 ANTES DE SALVAR - Cliente ID: ${customerData.id}`);
+  
+  // Verifica se o cliente já existe
+  const exists = await db.get('SELECT * FROM customers WHERE id = ?', customerData.id);
+  console.log(`📊 Cliente já existe?`, exists ? 'SIM' : 'NÃO');
+  
+  try {
+    const result = await db.run(`
+      INSERT OR REPLACE INTO customers (id, name, email, document)
+      VALUES (?, ?, ?, ?)
+    `, [customerData.id, customerData.name, 
+         customerData.email, customerData.document]);
+    
+    console.log(`📝 Resultado do INSERT:`, result);
+    
+    // VERIFICA SE REALMENTE SALVOU
+    const saved = await db.get('SELECT * FROM customers WHERE id = ?', customerData.id);
+    console.log(`✅ VERIFICAÇÃO PÓS-SALVAMENTO:`, saved);
+    
+    if (!saved) {
+      console.error(`❌ CLIENTE NÃO FOI SALVO! Mesmo após o INSERT!`);
+    }
+    
+    return customerData;
+    
+  } catch (error) {
+    console.error('❌ Erro ao salvar cliente:', error);
+    throw error;
+  }
+}
 }
 
 module.exports = Customer;
