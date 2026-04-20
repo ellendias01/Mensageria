@@ -99,6 +99,9 @@ function atualizarLista(orders) {
     container.innerHTML = orders.map(order => {
         const diffText = calcularDiferencaDatas(order.created_at, order.indexed_at);
         const tempoRecebimento = calcularDiferencaDatas(order.created_at, order.received_at);
+        const receivedLabel = order.received_at
+            ? formatarData(order.received_at)
+            : (order.indexed_at ? `${formatarData(order.indexed_at)} (indexação)` : 'N/A');
         
         return `
         <div class="order-card" onclick="verDetalhes('${order.uuid}')">
@@ -149,7 +152,7 @@ function atualizarLista(orders) {
             <div class="order-footer">
                 <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                     <span>📅 Pedido: ${formatarData(order.created_at)}</span>
-                    <span>📥 Recebido: ${order.received_at ? formatarData(order.received_at) : 'N/A'}</span>
+                    <span>📥 Recebido: ${receivedLabel}</span>
                     <span>💾 Indexado: ${order.indexed_at ? formatarData(order.indexed_at) : 'N/A'}</span>
                     ${diffText ? `<span class="diff-badge">⏱️ Processado ${diffText}</span>` : ''}
                     ${tempoRecebimento ? `<span class="diff-badge" style="background:#e3f2fd; color:#1565c0;">📥 Recebido ${tempoRecebimento}</span>` : ''}
@@ -218,6 +221,9 @@ function mostrarModal(order) {
     const modalBody = document.getElementById('modalBody');
     const diffText = calcularDiferencaDatas(order.created_at, order.indexed_at);
     const diffRecebimento = calcularDiferencaDatas(order.created_at, order.received_at);
+    const receivedLabel = order.received_at
+        ? formatarDataCompleta(order.received_at)
+        : (order.indexed_at ? `${formatarDataCompleta(order.indexed_at)} (indexação)` : 'N/A');
     
     modalBody.innerHTML = `
         <div class="detail-section">
@@ -225,7 +231,7 @@ function mostrarModal(order) {
             <div class="detail-grid">
                 <p><strong>UUID:</strong> <code>${order.uuid}</code></p>
                 <p><strong>Data do Pedido:</strong> ${formatarDataCompleta(order.created_at)}</p>
-                <p><strong>Data de Recebimento:</strong> ${order.received_at ? formatarDataCompleta(order.received_at) : 'N/A'}</p>
+                <p><strong>Data de Recebimento:</strong> ${receivedLabel}</p>
                 <p><strong>Data de Indexação:</strong> ${order.indexed_at ? formatarDataCompleta(order.indexed_at) : 'N/A'}</p>
                 ${diffRecebimento ? `<p><strong>📥 Tempo até recebimento:</strong> <span class="diff-highlight">${diffRecebimento}</span></p>` : ''}
                 ${diffText ? `<p><strong>⏱️ Tempo de processamento:</strong> <span class="diff-highlight">${diffText}</span></p>` : ''}
@@ -396,9 +402,29 @@ function atualizarPaginacao() {
 }
 
 // Formatar data resumida
+function parseDateSafe(value) {
+    if (!value) return null;
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+    if (typeof value !== 'string') {
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    // ISO completo com timezone (ex.: 2026-04-18T12:30:00.000Z)
+    if (value.includes('T')) {
+        const iso = new Date(value);
+        return Number.isNaN(iso.getTime()) ? null : iso;
+    }
+
+    // MySQL DATETIME sem timezone (ex.: 2026-04-18 12:30:00) tratado como horário local
+    const localDate = new Date(value.replace(' ', 'T'));
+    return Number.isNaN(localDate.getTime()) ? null : localDate;
+}
+
 function formatarData(data) {
-    if (!data) return 'N/A';
-    return new Date(data).toLocaleString('pt-BR', {
+    const parsed = parseDateSafe(data);
+    if (!parsed) return 'N/A';
+    return parsed.toLocaleString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -409,8 +435,9 @@ function formatarData(data) {
 
 // Formatar data completa
 function formatarDataCompleta(data) {
-    if (!data) return 'N/A';
-    return new Date(data).toLocaleString('pt-BR', {
+    const parsed = parseDateSafe(data);
+    if (!parsed) return 'N/A';
+    return parsed.toLocaleString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -424,8 +451,9 @@ function formatarDataCompleta(data) {
 function calcularDiferencaDatas(dataInicio, dataFim) {
     if (!dataInicio || !dataFim) return null;
     
-    const inicio = new Date(dataInicio);
-    const fim = new Date(dataFim);
+    const inicio = parseDateSafe(dataInicio);
+    const fim = parseDateSafe(dataFim);
+    if (!inicio || !fim) return null;
     const diffMs = fim - inicio;
     const diffMin = Math.floor(diffMs / 60000);
     const diffHoras = Math.floor(diffMs / 3600000);

@@ -1,92 +1,66 @@
-
-
----
-
-# 📦 Sistema de Mensageria - Gerenciamento de Pedidos
+# 📦 Sistema de Mensageria - Pedidos com Pub/Sub e MySQL
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.18-blue.svg)](https://expressjs.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8-blue.svg)](https://www.mysql.com/)
 [![Google Cloud Pub/Sub](https://img.shields.io/badge/Google%20Cloud-Pub%2FSub-orange.svg)](https://cloud.google.com/pubsub)
 
-> Sistema completo de processamento de pedidos com consumo de mensagens via Google Cloud Pub/Sub, persistência em MySQL e API RESTful.
+Sistema de processamento de pedidos com:
+- consumo assíncrono via Google Cloud Pub/Sub
+- persistência em MySQL
+- API REST com filtros, paginação e estatísticas
+- frontend para consulta e detalhamento dos pedidos
 
 ---
 
-## 📋 Sobre o Projeto
+## 📋 Visão geral
 
-Este projeto foi desenvolvido como atividade da disciplina **Computação em Nuvem 2** da **FATEC - Desenvolvimento de Software Multiplataforma**.
+Este projeto foi desenvolvido como atividade da disciplina **Computação em Nuvem 2** da FATEC DSM.
 
-O sistema implementa um consumidor de mensagens do Google Cloud Pub/Sub para processar pedidos de um marketplace, persistindo os dados em um banco relacional, disponibilizando uma API RESTful com uma interface web para consulta e gestão dos pedidos.
+Fluxo principal:
+1. uma mensagem de pedido chega no tópico/subscription do Pub/Sub
+2. o consumidor processa e persiste no MySQL
+3. a API REST disponibiliza os dados
+4. o frontend consome a API para exibir cards, filtros e detalhes
 
 ---
 
-## 🎯 Funcionalidades
+## ✅ Funcionalidades
 
-* ✅ Consumidor Pub/Sub (assíncrono): Processa mensagens assincronamente com sistema de ACK/NACK e logs detalhados
-* ✅ Persistência em MySQL: Modelo relacional completo no MySQL com tratamento de duplicidade (`ON DUPLICATE KEY UPDATE`)
-* ✅ API RESTful completa: Endpoints para listar, filtrar, detalhar e atualizar pedidos e clientes
-* ✅ Paginação e filtros
-* ✅ Cálculo automático de totais
-* ✅ Interface Web:
-  - Dashboard com estatísticas (total de pedidos, valor total, ticket médio)
-  - Filtros dinâmicos (por UUID, cliente, produto, status)
-* ✅ Timestamp de processamento: Exibe as datas de criação, recebimento e indexação do pedido
-* ✅ Tratamento de Erros: Gerencia conflitos de chave duplicada, garantindo idempotência
-  
+- Consumidor Pub/Sub com `ACK/NACK`
+- Idempotência por `uuid` (evita duplicidade)
+- Persistência relacional em MySQL
+- API REST para pedidos e clientes
+- Filtros e paginação em `/orders`
+- Estatísticas agregadas em `/orders/statistics`
+- Frontend com lista, modal de detalhes e sincronização
+- Script de migração SQLite → MySQL
+
 ---
 
-## 🏗️ Arquitetura do Sistema
+## 🏗️ Arquitetura
 
 ```text
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│ Google Cloud    │     │ Consumidor       │     │ MySQL DB        │
-│ Pub/Sub         │────▶│ (Node.js)        │────▶│ (Persistência)  │
-│ (Mensagens)     │     │                  │     │                 │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                                 │
-                                 ▼
-                       ┌──────────────────┐
-                       │ API REST         │
-                       │ (Express.js)     │
-                       └──────────────────┘
-                                 │
-                                 ▼
-                       ┌──────────────────┐
-                       │ Frontend         │
-                       │ (HTML/CSS/JS)    │
-                       └──────────────────┘
+Google Cloud Pub/Sub -> pubsub-consumer (Node.js) -> MySQL
+                                          |
+                                          v
+                                   API REST (Express)
+                                          |
+                                          v
+                                   Frontend (HTML/CSS/JS)
 ```
 
 ---
 
-## 🚀 Tecnologias Utilizadas
-
-| Tecnologia           | Descrição            |
-| -------------------- | -------------------- |
-| Node.js              | Ambiente de execução |
-| Express.js           | API REST             |
-| MySQL                | Banco de dados       |
-| Google Cloud Pub/Sub | Mensageria           |
-| HTML/CSS/JS          | Frontend             |
-
----
-
-## 📁 Estrutura do Projeto
+## 🧱 Estrutura do projeto
 
 ```text
-projeto-mensageria/
-├── database/
-│   └── (artefatos locais; banco principal é MySQL)
-├── docs/
-│   ├── postman/
-│   │   └── Mensageria.postman_collection.json
-│   └── database/ 
-│       └── database_der.png
+Mensageria/
 ├── public/
 │   ├── index.html
+│   ├── app.js
 │   ├── style.css
-│   └── app.js
+│   └── realtime-monitor.html
 ├── src/
 │   ├── api/
 │   │   ├── server.js
@@ -95,99 +69,150 @@ projeto-mensageria/
 │   │       └── customers.js
 │   ├── config/
 │   │   ├── database.js
+│   │   ├── initDB.js
 │   │   ├── test-connection.js
-│   │   ├── check-messages.js
+│   │   ├── test-mysql-connection.js
+│   │   ├── migrate-sqlite-to-mysql.js
 │   │   ├── setup-pubsub.js
-│   │   └── initDB.js
+│   │   └── check-messages.js
 │   ├── consumer/
-│   │   ├── real-consumer.js
+│   │   ├── pubsub-consumer.js
 │   │   └── mock-consumer.js
 │   ├── models/
-│   ├── services/
-│   └── utils/
+│   │   ├── Order.js
+│   │   ├── Customer.js
+│   │   ├── Product.js
+│   │   └── ItemPedido.js
+│   └── services/
+│       └── orderService.js
 ├── database/
+│   ├── database.sqlite              # legado/local (origem de migração)
+│   ├── database.sqlite-wal          # artefato local do SQLite
+│   └── schema.sql
+├── check-orders.js
+├── .env.example
 ├── package.json
 └── README.md
 ```
 
 ---
 
-## 
-<h3 align="center">🗄️ Diagrama do Banco de Dados (DER)</h3>
+## 🗃️ Modelo de dados (MySQL)
 
-<p align="center">
-  <img src="docs/database/database_der.png" width="600"/>
-</p>
+Tabelas principais:
+- `customers`
+- `products`
+- `orders`
+- `order_items`
+- `shipments`
+- `payments`
+- `metadata`
+
+Relacionamentos:
+- `orders.customer_id -> customers.id`
+- `order_items.order_uuid -> orders.uuid`
+- `order_items.product_id -> products.id`
+- `shipments.order_uuid -> orders.uuid`
+- `payments.order_uuid -> orders.uuid`
+- `metadata.order_uuid -> orders.uuid`
 
 ---
 
-## 🔧 Instalação e Configuração
+## ⚙️ Configuração
 
 ### Pré-requisitos
 
-* Node.js 20+
-* npm 10+
-* Conta no Google Cloud
+- Node.js 20+
+- npm 10+
+- MySQL acessível
+- credencial GCP (service account) para Pub/Sub
+
+### Variáveis de ambiente (`.env`)
+
+Use `.env.example` como base:
+
+```bash
+copy .env.example .env
+```
+
+Campos usados:
+- `MYSQL_HOST`
+- `MYSQL_PORT`
+- `MYSQL_DATABASE`
+- `MYSQL_USER`
+- `MYSQL_PASSWORD`
+- opcional: `MYSQL_POOL_SIZE`
+
+Credencial GCP:
+- recomendado: `service-account.json` na raiz
+- opcional: `GOOGLE_APPLICATION_CREDENTIALS` apontando para o arquivo
 
 ---
 
-### Passo a passo
+## 🚀 Como rodar
 
-### 1. Clone o repositório
-
-```bash
-git clone https://github.com/ellendias01/Mensageria.git
-cd Mensageria
-```
-
-### 2. Instale as dependências
+### 1) Instalar dependências
 
 ```bash
 npm install
 ```
 
-### 3. Configure o Google Cloud
-
-* Coloque o `service-account.json` na raiz do projeto **(recomendado)**.
-* Alternativamente, defina a variável `GOOGLE_APPLICATION_CREDENTIALS` com o caminho do arquivo JSON.
-
-Exemplo (PowerShell):
-
-```powershell
-$env:GOOGLE_APPLICATION_CREDENTIALS="C:\Projects\Mensageria\service-account.json"
-```
-
----
-
-### 4. Inicialize o banco
+### 2) Inicializar schema MySQL
 
 ```bash
 npm run init-db
 ```
 
----
-
-### 5. Execute o sistema
-
-Terminal 1:
+### 3) Subir API
 
 ```bash
 npm start
 ```
 
-Acesse: [http://localhost:3001](http://localhost:3001)
+API e frontend em `http://localhost:3001`
 
-Terminal 2:
+### 4) Subir consumidor real (terminal separado)
 
 ```bash
 npm run pubsub-consumer
 ```
 
-Ou para testes:
+### 5) (Opcional) Gerar dados mock
 
 ```bash
 npm run mock-consumer
 ```
+
+---
+
+## 🧪 Scripts úteis
+
+| Comando | Descrição |
+| --- | --- |
+| `npm start` | Inicia API + frontend |
+| `npm run dev` | API com nodemon |
+| `npm run init-db` | Garante schema MySQL |
+| `npm run pubsub-consumer` | Consumidor real do Pub/Sub |
+| `npm run mock-consumer` | Gera pedidos de teste local |
+| `npm run test-mysql` | Testa conexão com MySQL |
+| `npm run test-connection` | Publica pedido de teste no tópico |
+| `npm run check-db` | Consulta e resume dados persistidos |
+| `npm run migrate-sqlite-to-mysql` | Migra dados legados SQLite para MySQL |
+
+---
+
+## 🔄 Migração SQLite -> MySQL
+
+Se você tem pedidos antigos no SQLite e quer trazer para o MySQL:
+
+```bash
+npm run migrate-sqlite-to-mysql
+```
+
+Observações:
+- usa `database/database.sqlite` por padrão
+- também aceita `SQLITE_PATH` para caminho customizado
+- faz `upsert`, então não duplica linhas já migradas
 
 ---
 
@@ -195,140 +220,62 @@ npm run mock-consumer
 
 ### Pedidos
 
-| Método | Endpoint             | Descrição         |
-| ------ | -------------------- | ----------------- |
-| GET    | /orders              | Lista pedidos     |
-| GET    | /orders/:uuid        | Pedido específico |
-| PATCH  | /orders/:uuid/status | Atualiza status   |
-| GET    | /orders/statistics   | Estatísticas      |
-
----
+| Método | Endpoint | Descrição |
+| --- | --- | --- |
+| `GET` | `/orders` | Lista pedidos com filtros/paginação |
+| `GET` | `/orders/:uuid` | Retorna um pedido detalhado |
+| `PATCH` | `/orders/:uuid/status` | Atualiza status |
+| `GET` | `/orders/statistics` | Retorna estatísticas agregadas |
 
 ### Clientes
 
-| Método | Endpoint       |
-| ------ | -------------- |
-| GET    | /customers     |
-| GET    | /customers/:id |
-| PUT    | /customers/:id |
-| DELETE | /customers/:id |
+| Método | Endpoint |
+| --- | --- |
+| `GET` | `/customers` |
+| `GET` | `/customers/:id` |
+| `PUT` | `/customers/:id` |
+| `DELETE` | `/customers/:id` |
+
+### Outros
+
+| Método | Endpoint | Descrição |
+| --- | --- | --- |
+| `GET` | `/health` | Health check da API |
+| `POST` | `/test-publish` | Publica pedido de teste no Pub/Sub |
 
 ---
 
-## 🎨 Frontend
+## 🖥️ Frontend
 
-* 📊 Dashboard com estatísticas
-  - Cards com Total de Pedidos, Valor Total e Ticket Médio     
-* 🔍 Filtros
-   -  Busca por UUID, código do cliente, ID do produto e status
-* 📄 Paginação
-  - Navegação entre páginas com indicador visual
-* 📋 Modal de detalhes
-  - Ao clicar, exibe todas as informações do pedido
-* 📱 Responsivo
+Recursos:
+- cards com pedidos e status
+- filtros por UUID, cliente, produto e status
+- paginação
+- modal de detalhes do pedido
+- exibição de `created_at`, `received_at` e `indexed_at`
 
----
-
-## 🧪 Testes
-
-### Dados mockados
-
-```bash
-npm run mock-consumer
-```
-
-### Ver banco
-
-```bash
-npm run check-db
-```
-
-### Testar Pub/Sub
-
-```bash
-npm run test-connection
-```
-
-### Testar conexão MySQL
-
-1) Copie o arquivo de exemplo e preencha a senha:
-
-```bash
-copy .env.example .env
-```
-
-2) Rode o teste:
-
-```bash
-npm run test-mysql
-```
-
----
-
-## 📊 Status dos Pedidos
-
-| Status    | Descrição |
-| --------- | --------- |
-| created   | Criado    |
-| paid      | Pago      |
-| shipped   | Enviado   |
-| delivered | Entregue  |
-| canceled  | Cancelado |
+Obs.: quando `received_at` não existe (ex.: dados antigos/mock), o frontend usa a data de indexação como fallback visual.
 
 ---
 
 ## 🔐 Segurança
 
-* Não subir `service-account.json`
-* Usar `.env`
-* `.gitignore` configurado
+- não versionar `.env`
+- não versionar `service-account.json`
+- usar `.env.example` sem segredos
+- manter `.gitignore` atualizado
 
 ---
-👥 Autores
 
+## 🧑‍💻 Autores
 
-Éllen Dias Farias — [@ellendias01](https://github.com/ellendias01) <br>
-Habbiner Andrade — [@habbiner](https://github.com/habbiner) <br>
-Gabriel Abramovick Bortoliero — [@Bortoliero](https://github.com/Bortoliero)
+- Éllen Dias Farias — [@ellendias01](https://github.com/ellendias01)
+- Habbiner Andrade — [@habbiner](https://github.com/habbiner)
+- Gabriel Abramovick Bortoliero — [@Bortoliero](https://github.com/Bortoliero)
 
 ---
 
 ## 📝 Licença
 
 MIT (uso acadêmico)
-
----
-
-## 📌 Comandos Rápidos
-
-| Comando               | Descrição       |
-| --------------------- | --------------- |
-| npm start             | API + Front     |
-| npm run pubsub-consumer | Consumidor real |
-| npm run mock-consumer | Teste           |
-| npm run check-db      | Ver banco       |
-| npm run init-db       | Inicializa schema |
-
----
-
-## 🚀 Como Testar a API (Postman)
-
-Para facilitar os testes dos endpoints, disponibilizamos uma coleção do Postman pronta para uso.
-
-1.  Localize o arquivo em: `docs/postman/Mensageria.postman_collection.json`.
-2.  No Postman, clique em **Import** e selecione este arquivo.
-3.  Certifique-se de que o servidor está rodando (`npm start`).
-4.  A variável `{{base_url}}` já está configurada para `http://localhost:3001`.
-
----
-
-## 🚀 Atualizar no GitHub
-
-```bash
-git add README.md
-git commit -m "README corrigido e formatado"
-git push
-```
-
----
 
