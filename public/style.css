@@ -298,7 +298,9 @@ body {
 .status-separated { background: #fff3e0; color: #f57c00; }
 .status-shipped { background: #f3e5f5; color: #7b1fa2; }
 .status-delivered { background: #d1c4e9; color: #4527a0; }
-.status-canceled { background: #ffcdd2; color: #c62828; }
+.status-cancelled { background: #ffcdd2; color: #c62828; }
+.status-pending { background: #ffe1f3; color: #f517be; }
+.status-confirmed { background: #e8f5f4; color: #388e87; }
 
 .order-total {
     text-align: right;
@@ -664,4 +666,119 @@ body {
     background: #ddd;
     margin-left: 4px;
 }
+}
+
+/* Cores para Status de Pagamento */
+.payment-status-pending {
+    background: #FFF3E0;
+    color: #E65100;
+    border-left: 1px solid #FF9800;
+}
+
+.payment-status-processing {
+    background: #E3F2FD;
+    color: #1565C0;
+    border-left: 1px solid #2196F3;
+}
+
+.payment-status-approved {
+    background: #E8F5E9;
+    color: #2E7D32;
+    border-left: 1px solid #4CAF50;
+}
+
+.payment-status-rejected {
+    background: #FFEBEE;
+    color: #C62828;
+    border-left: 1px solid #F44336;
+}
+
+/* Cores para Métodos de Pagamento */
+.method-credit_card {
+    background: #E8EAF6;
+    color: #3949AB;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.method-debit_card {
+    background: #E8EAF6;
+    color: #3949AB;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.method-pix {
+    background: #E0F2F1;
+    color: #00695C;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.method-bank_transfer {
+    background: #F3E5F5;
+    color: #6A1B9A;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.method-boleto {
+    background: #FFE0B2;
+    color: #E65100;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.method-cash {
+    background: #FFF9C4;
+    color: #F57F17;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.method-default {
+    background: #E0E0E0;
+    color: #424242;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+/* Filtro full-width */
+.filter-group.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Animações */
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(20px); }
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+}
+
+/* Badge de diferença de datas */
+.diff-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.diff-highlight {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: inline-block;
 }

@@ -49,40 +49,43 @@
             </div>
             <div class="filters-body" id="filtersBody">
                 <div class="filters-grid">
+                    <div class="filter-group full-width">
+                        <label>🔍 Busca Geral</label>
+                        <input type="text" id="filterGeneral" placeholder="Buscar em qualquer campo (UUID, cliente, documento, produto, status, etc.)" onkeyup="aplicarFiltrosDebounced()">
+                    </div>
                     <div class="filter-group">
                         <label>🆔 UUID do Pedido</label>
-                        <input type="text" id="filterUuid" placeholder="ORD-2025-0001">
+                        <input type="text" id="filterUuid" placeholder="ORD-2025-0001" onkeyup="aplicarFiltrosDebounced()">
                     </div>
                     <div class="filter-group">
                         <label>👤 Código do Cliente</label>
-                        <input type="number" id="filterCliente" placeholder="49494">
+                        <input type="number" id="filterCliente" placeholder="49494" onkeyup="aplicarFiltrosDebounced()">
                     </div>
                     <div class="filter-group">
                         <label>📦 ID do Produto</label>
-                        <input type="number" id="filterProduto" placeholder="9001">
+                        <input type="number" id="filterProduto" placeholder="9001" onkeyup="aplicarFiltrosDebounced()">
                     </div>
                     <div class="filter-group">
-                        <label>📊 Status</label>
-                        <select id="filterStatus">
-                            <option value="">Todos</option>
+                        <label>📊 Status do Pedido</label>
+                        <select id="filterStatus" onchange="aplicarFiltros()">
+                            <option value="">📋 Todos</option>
+                            <option value="pending">⏳ Pendente</option>
+                            <option value="confirmed">✅ Confirmado</option>
                             <option value="created">🟡 Criado</option>
                             <option value="paid">🟢 Pago</option>
                             <option value="separated">🟠 Separado</option>
                             <option value="shipped">🟣 Enviado</option>
                             <option value="delivered">🔵 Entregue</option>
-                            <option value="canceled">🔴 Cancelado</option>
+                            <option value="cancelled">❌ Cancelado</option>
                         </select>
                     </div>
                 </div>
                 <div class="filter-actions">
                     <button class="btn-primary" onclick="sincronizarDados()">
-    🔄 Sincronizar com Banco
-</button>
-                    <button class="btn-primary" onclick="aplicarFiltros()">
-                        🔄 Aplicar Filtros
+                        🔄 Sincronizar com Banco
                     </button>
                     <button class="btn-secondary" onclick="limparFiltros()">
-                        🧹 Limpar
+                        🧹 Limpar Filtros
                     </button>
                 </div>
             </div>

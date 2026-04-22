@@ -4,8 +4,39 @@ let totalPages = 1;
 let totalOrders = 0;
 let currentSort = 'DESC';
 let filtersVisible = true;
+let filterTimeout = null;
 
 const API_URL = 'http://localhost:3001';
+
+// Configurações de cores para status de pagamento
+const paymentStatusConfig = {
+    'pending': { label: '⏳ Pendente', class: 'payment-status-pending' },
+    'processing': { label: '⚙️ Processando', class: 'payment-status-processing' },
+    'approved': { label: '✅ Aprovado', class: 'payment-status-approved' },
+    'rejected': { label: '❌ Rejeitado', class: 'payment-status-rejected' }
+};
+
+// Configurações para métodos de pagamento
+const paymentMethodConfig = {
+    'credit_card': { label: '💳 Cartão de Crédito', class: 'method-credit_card' },
+    'debit_card': { label: '💳 Cartão de Débito', class: 'method-debit_card' },
+    'pix': { label: '📱 PIX', class: 'method-pix' },
+    'bank_transfer': { label: '🏦 Transferência Bancária', class: 'method-bank_transfer' },
+    'boleto': { label: '📄 Boleto', class: 'method-boleto' },
+    'cash': { label: '💰 Dinheiro', class: 'method-cash' }
+};
+
+// Mapeamento de status do pedido
+const orderStatusMap = {
+    'pending': '⏳ Pendente',
+    'confirmed': '✅ Confirmado',
+    'created': '🟡 Criado',
+    'paid': '🟢 Pago',
+    'separated': '🟠 Separado',
+    'shipped': '🟣 Enviado',
+    'delivered': '🔵 Entregue',
+    'cancelled': '❌ Cancelado'
+};
 
 // Toggle filters
 function toggleFilters() {
@@ -26,6 +57,14 @@ function toggleFilters() {
     }
 }
 
+// Debounce para busca geral
+function aplicarFiltrosDebounced() {
+    if (filterTimeout) clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => {
+        aplicarFiltros();
+    }, 500);
+}
+
 // Toggle sort
 function toggleSort() {
     currentSort = currentSort === 'DESC' ? 'ASC' : 'DESC';
@@ -35,18 +74,52 @@ function toggleSort() {
     carregarPedidos();
 }
 
-// Carregar pedidos
+// Busca geral COMPLETA em todos os campos
+function filtrarLocalmente(order, searchTerm) {
+    if (!searchTerm) return true;
+    
+    searchTerm = searchTerm.toLowerCase().trim();
+    
+    // Função auxiliar para buscar em objetos aninhados
+    function deepSearch(obj, term) {
+        if (!obj) return false;
+        if (typeof obj === 'string') return obj.toLowerCase().includes(term);
+        if (typeof obj === 'number') return String(obj).includes(term);
+        if (Array.isArray(obj)) return obj.some(item => deepSearch(item, term));
+        if (typeof obj === 'object') {
+            return Object.values(obj).some(value => deepSearch(value, term));
+        }
+        return false;
+    }
+    
+    // Buscar em TODOS os campos do pedido
+    return deepSearch(order, searchTerm);
+}
+
+// Carregar pedidos com suporte a todos os filtros
 async function carregarPedidos() {
+    const searchGeneral = document.getElementById('filterGeneral')?.value || '';
+    const filterUuid = document.getElementById('filterUuid')?.value || '';
+    const filterCliente = document.getElementById('filterCliente')?.value || '';
+    const filterProduto = document.getElementById('filterProduto')?.value || '';
+    const filterStatus = document.getElementById('filterStatus')?.value || '';
+    const filterPaymentStatus = document.getElementById('filterPaymentStatus')?.value || '';
+    const filterPaymentMethod = document.getElementById('filterPaymentMethod')?.value || '';
+    
+    // Construir filtros para a API
     const filters = {
         page: currentPage,
         limit: limit,
         orderBy: 'created_at',
-        orderDir: currentSort,
-        codigoCliente: document.getElementById('filterCliente')?.value,
-        product_id: document.getElementById('filterProduto')?.value,
-        status: document.getElementById('filterStatus')?.value,
-        uuid: document.getElementById('filterUuid')?.value
+        orderDir: currentSort
     };
+    
+    if (filterUuid) filters.uuid = filterUuid;
+    if (filterCliente) filters.codigoCliente = filterCliente;
+    if (filterProduto) filters.product_id = filterProduto;
+    if (filterStatus) filters.status = filterStatus;
+    if (filterPaymentStatus) filters.payment_status = filterPaymentStatus;
+    if (filterPaymentMethod) filters.payment_method = filterPaymentMethod;
 
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
@@ -57,10 +130,21 @@ async function carregarPedidos() {
         const response = await fetch(`${API_URL}/orders?${params}`);
         const data = await response.json();
         
-        totalPages = data.pagination.totalPages;
-        totalOrders = data.pagination.total;
+        let orders = data.data || [];
         
-        atualizarLista(data.data);
+        // Aplicar filtro geral (busca em todos os campos)
+        if (searchGeneral) {
+            orders = orders.filter(order => filtrarLocalmente(order, searchGeneral));
+            totalPages = Math.ceil(orders.length / limit);
+            totalOrders = orders.length;
+            const startIndex = (currentPage - 1) * limit;
+            orders = orders.slice(startIndex, startIndex + limit);
+        } else {
+            totalPages = data.pagination?.totalPages || 1;
+            totalOrders = data.pagination?.total || 0;
+        }
+        
+        atualizarLista(orders);
         atualizarPaginacao();
         carregarEstatisticas();
         
@@ -70,13 +154,14 @@ async function carregarPedidos() {
             <div class="empty-state">
                 <div class="empty-icon">❌</div>
                 <h3>Erro ao carregar pedidos</h3>
-                <p>Verifique se o servidor está rodando</p>
+                <p>Verifique se o servidor está rodando na porta 3001</p>
+                <p style="font-size:0.8rem; margin-top:10px;">💡 Execute: npm start</p>
             </div>
         `;
     }
 }
 
-// Atualizar lista
+// Atualizar lista de pedidos
 function atualizarLista(orders) {
     const container = document.getElementById('ordersList');
     const resultsCount = document.getElementById('resultsCount');
@@ -99,9 +184,9 @@ function atualizarLista(orders) {
     container.innerHTML = orders.map(order => {
         const diffText = calcularDiferencaDatas(order.created_at, order.indexed_at);
         const tempoRecebimento = calcularDiferencaDatas(order.created_at, order.received_at);
-        const receivedLabel = order.received_at
-            ? formatarData(order.received_at)
-            : (order.indexed_at ? `${formatarData(order.indexed_at)} (indexação)` : 'N/A');
+        const paymentStatus = paymentStatusConfig[order.payment?.status] || { label: order.payment?.status || 'N/A', class: 'payment-status-pending' };
+        const paymentMethod = paymentMethodConfig[order.payment?.method] || { label: order.payment?.method || 'N/A', class: 'method-default' };
+        const orderStatus = orderStatusMap[order.status] || order.status;
         
         return `
         <div class="order-card" onclick="verDetalhes('${order.uuid}')">
@@ -110,11 +195,11 @@ function atualizarLista(orders) {
                     <div class="order-uuid">
                         <code>${order.uuid}</code>
                         <span class="status-badge status-${order.status}" style="margin-left: 12px;">
-                            ${traduzirStatus(order.status)}
+                            ${orderStatus}
                         </span>
                     </div>
                     <div class="order-meta">
-                        <span>👤 Cliente: ${order.customer.name} (ID: ${order.customer.id})</span>
+                        <span>👤 Cliente: ${order.customer?.name || 'N/A'} (ID: ${order.customer?.id || 'N/A'})</span>
                         <span>📱 Canal: ${order.channel || 'N/A'}</span>
                         <span>📅 Pedido: ${formatarData(order.created_at)}</span>
                     </div>
@@ -128,8 +213,8 @@ function atualizarLista(orders) {
             <div class="order-details-grid">
                 <div class="detail-item">
                     <p>🏪 VENDEDOR</p>
-                    <p>${order.seller.name}</p>
-                    <p style="font-size:0.75rem; color:#666;">${order.seller.city}/${order.seller.state}</p>
+                    <p>${order.seller?.name || 'N/A'}</p>
+                    <p style="font-size:0.75rem; color:#666;">${order.seller?.city || ''}/${order.seller?.state || ''}</p>
                 </div>
                 <div class="detail-item">
                     <p>🚚 ENVIO</p>
@@ -138,21 +223,21 @@ function atualizarLista(orders) {
                 </div>
                 <div class="detail-item">
                     <p>💳 PAGAMENTO</p>
-                    <p>${order.payment?.method || 'N/A'}</p>
-                    <p class="${order.payment?.status === 'approved' ? 'status-paid' : 'status-created'}" style="font-size:0.75rem;">
-                        ${order.payment?.status || 'N/A'}
+                    <p>${paymentMethod.label}</p>
+                    <p class="${paymentStatus.class}" style="font-size:0.75rem; display:inline-block; padding:2px 8px; border-radius:12px;">
+                        ${paymentStatus.label}
                     </p>
                 </div>
                 <div class="detail-item">
                     <p>📦 ITENS</p>
-                    <p>${order.items.length} ${order.items.length === 1 ? 'item' : 'itens'}</p>
+                    <p>${order.items?.length || 0} ${order.items?.length === 1 ? 'item' : 'itens'}</p>
                 </div>
             </div>
             
             <div class="order-footer">
                 <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                     <span>📅 Pedido: ${formatarData(order.created_at)}</span>
-                    <span>📥 Recebido: ${receivedLabel}</span>
+                    <span>📥 Recebido: ${order.received_at ? formatarData(order.received_at) : 'N/A'}</span>
                     <span>💾 Indexado: ${order.indexed_at ? formatarData(order.indexed_at) : 'N/A'}</span>
                     ${diffText ? `<span class="diff-badge">⏱️ Processado ${diffText}</span>` : ''}
                     ${tempoRecebimento ? `<span class="diff-badge" style="background:#e3f2fd; color:#1565c0;">📥 Recebido ${tempoRecebimento}</span>` : ''}
@@ -199,31 +284,34 @@ async function verDetalhes(uuid) {
         alert('Erro ao carregar detalhes do pedido');
     }
 }
+
+// Sincronizar dados
 async function sincronizarDados() {
     console.log('🔄 Sincronizando dados...');
     currentPage = 1;
     await carregarPedidos();
     await carregarEstatisticas();
     
-    // Mostrar toast de confirmação
     const toast = document.createElement('div');
     toast.textContent = '✅ Dados sincronizados com o banco!';
     toast.style.cssText = `
         position: fixed; bottom: 20px; right: 20px; 
         background: #28a745; color: white; padding: 10px 20px; 
         border-radius: 8px; z-index: 9999;
+        animation: fadeInOut 3s ease;
     `;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
+
 // Mostrar modal
 function mostrarModal(order) {
     const modalBody = document.getElementById('modalBody');
     const diffText = calcularDiferencaDatas(order.created_at, order.indexed_at);
     const diffRecebimento = calcularDiferencaDatas(order.created_at, order.received_at);
-    const receivedLabel = order.received_at
-        ? formatarDataCompleta(order.received_at)
-        : (order.indexed_at ? `${formatarDataCompleta(order.indexed_at)} (indexação)` : 'N/A');
+    const paymentStatus = paymentStatusConfig[order.payment?.status] || { label: order.payment?.status || 'N/A', class: 'payment-status-pending' };
+    const paymentMethod = paymentMethodConfig[order.payment?.method] || { label: order.payment?.method || 'N/A', class: 'method-default' };
+    const orderStatus = orderStatusMap[order.status] || order.status;
     
     modalBody.innerHTML = `
         <div class="detail-section">
@@ -231,12 +319,12 @@ function mostrarModal(order) {
             <div class="detail-grid">
                 <p><strong>UUID:</strong> <code>${order.uuid}</code></p>
                 <p><strong>Data do Pedido:</strong> ${formatarDataCompleta(order.created_at)}</p>
-                <p><strong>Data de Recebimento:</strong> ${receivedLabel}</p>
+                <p><strong>Data de Recebimento:</strong> ${order.received_at ? formatarDataCompleta(order.received_at) : 'N/A'}</p>
                 <p><strong>Data de Indexação:</strong> ${order.indexed_at ? formatarDataCompleta(order.indexed_at) : 'N/A'}</p>
                 ${diffRecebimento ? `<p><strong>📥 Tempo até recebimento:</strong> <span class="diff-highlight">${diffRecebimento}</span></p>` : ''}
                 ${diffText ? `<p><strong>⏱️ Tempo de processamento:</strong> <span class="diff-highlight">${diffText}</span></p>` : ''}
                 <p><strong>Canal:</strong> ${order.channel || 'N/A'}</p>
-                <p><strong>Status:</strong> <span class="status-badge status-${order.status}">${traduzirStatus(order.status)}</span></p>
+                <p><strong>Status do Pedido:</strong> <span class="status-badge status-${order.status}">${orderStatus}</span></p>
                 <p><strong>Total:</strong> <strong style="color:#28a745; font-size:1.2rem;">${formatarMoeda(order.total)}</strong></p>
             </div>
         </div>
@@ -244,19 +332,19 @@ function mostrarModal(order) {
         <div class="detail-section">
             <h3>👤 Cliente</h3>
             <div class="detail-grid">
-                <p><strong>ID:</strong> ${order.customer.id}</p>
-                <p><strong>Nome:</strong> ${order.customer.name}</p>
-                <p><strong>Email:</strong> ${order.customer.email}</p>
-                <p><strong>Documento:</strong> ${order.customer.document}</p>
+                <p><strong>ID:</strong> ${order.customer?.id || 'N/A'}</p>
+                <p><strong>Nome:</strong> ${order.customer?.name || 'N/A'}</p>
+                <p><strong>Email:</strong> ${order.customer?.email || 'N/A'}</p>
+                <p><strong>Documento (CPF/CNPJ):</strong> ${order.customer?.document || 'N/A'}</p>
             </div>
         </div>
         
         <div class="detail-section">
             <h3>🏪 Vendedor</h3>
             <div class="detail-grid">
-                <p><strong>ID:</strong> ${order.seller.id}</p>
-                <p><strong>Nome:</strong> ${order.seller.name}</p>
-                <p><strong>Cidade:</strong> ${order.seller.city}/${order.seller.state}</p>
+                <p><strong>ID:</strong> ${order.seller?.id || 'N/A'}</p>
+                <p><strong>Nome:</strong> ${order.seller?.name || 'N/A'}</p>
+                <p><strong>Cidade:</strong> ${order.seller?.city || ''}/${order.seller?.state || ''}</p>
             </div>
         </div>
         
@@ -267,15 +355,15 @@ function mostrarModal(order) {
                     <tr><th>Produto</th><th>ID</th><th>Qtd</th><th>Unitário</th><th>Subtotal</th></tr>
                 </thead>
                 <tbody>
-                    ${order.items.map(item => `
+                    ${order.items?.map(item => `
                         <tr>
-                            <td>${item.product_name}</td>
-                            <td>${item.product_id}</td>
-                            <td>${item.quantity}</td>
-                            <td>${formatarMoeda(item.unit_price)}</td>
-                            <td><strong>${formatarMoeda(item.total)}</strong></td>
+                            <td>${item.product_name || 'N/A'}</td>
+                            <td>${item.product_id || 'N/A'}</td>
+                            <td>${item.quantity || 0}</td>
+                            <td>${formatarMoeda(item.unit_price || 0)}</td>
+                            <td><strong>${formatarMoeda(item.total || 0)}</strong></td>
                         </tr>
-                    `).join('')}
+                    `).join('') || '<tr><td colspan="5">Nenhum item encontrado</td></tr>'}
                 </tbody>
             </table>
         </div>
@@ -286,15 +374,15 @@ function mostrarModal(order) {
                 <p><strong>Transportadora:</strong> ${order.shipment?.carrier || 'N/A'}</p>
                 <p><strong>Serviço:</strong> ${order.shipment?.service || 'N/A'}</p>
                 <p><strong>Status:</strong> ${order.shipment?.status || 'N/A'}</p>
-                <p><strong>Código:</strong> <code>${order.shipment?.tracking_code || 'N/A'}</code></p>
+                <p><strong>Código de Rastreio:</strong> <code>${order.shipment?.tracking_code || 'N/A'}</code></p>
             </div>
         </div>
         
         <div class="detail-section">
             <h3>💳 Pagamento</h3>
             <div class="detail-grid">
-                <p><strong>Método:</strong> ${order.payment?.method || 'N/A'}</p>
-                <p><strong>Status:</strong> ${order.payment?.status || 'N/A'}</p>
+                <p><strong>Método:</strong> ${paymentMethod.label}</p>
+                <p><strong>Status:</strong> <span class="${paymentStatus.class}" style="padding:2px 8px; border-radius:12px; display:inline-block;">${paymentStatus.label}</span></p>
                 <p><strong>Transação:</strong> <code>${order.payment?.transaction_id || 'N/A'}</code></p>
             </div>
         </div>
@@ -325,16 +413,18 @@ function aplicarFiltros() {
 
 // Limpar filtros
 function limparFiltros() {
+    const generalInput = document.getElementById('filterGeneral');
     const uuidInput = document.getElementById('filterUuid');
     const clienteInput = document.getElementById('filterCliente');
     const produtoInput = document.getElementById('filterProduto');
     const statusSelect = document.getElementById('filterStatus');
     
+    if (generalInput) generalInput.value = '';
     if (uuidInput) uuidInput.value = '';
     if (clienteInput) clienteInput.value = '';
     if (produtoInput) produtoInput.value = '';
     if (statusSelect) statusSelect.value = '';
-    
+   
     currentPage = 1;
     carregarPedidos();
 }
@@ -402,29 +492,9 @@ function atualizarPaginacao() {
 }
 
 // Formatar data resumida
-function parseDateSafe(value) {
-    if (!value) return null;
-    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
-    if (typeof value !== 'string') {
-        const parsed = new Date(value);
-        return Number.isNaN(parsed.getTime()) ? null : parsed;
-    }
-
-    // ISO completo com timezone (ex.: 2026-04-18T12:30:00.000Z)
-    if (value.includes('T')) {
-        const iso = new Date(value);
-        return Number.isNaN(iso.getTime()) ? null : iso;
-    }
-
-    // MySQL DATETIME sem timezone (ex.: 2026-04-18 12:30:00) tratado como horário local
-    const localDate = new Date(value.replace(' ', 'T'));
-    return Number.isNaN(localDate.getTime()) ? null : localDate;
-}
-
 function formatarData(data) {
-    const parsed = parseDateSafe(data);
-    if (!parsed) return 'N/A';
-    return parsed.toLocaleString('pt-BR', {
+    if (!data) return 'N/A';
+    return new Date(data).toLocaleString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -435,9 +505,8 @@ function formatarData(data) {
 
 // Formatar data completa
 function formatarDataCompleta(data) {
-    const parsed = parseDateSafe(data);
-    if (!parsed) return 'N/A';
-    return parsed.toLocaleString('pt-BR', {
+    if (!data) return 'N/A';
+    return new Date(data).toLocaleString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -451,9 +520,8 @@ function formatarDataCompleta(data) {
 function calcularDiferencaDatas(dataInicio, dataFim) {
     if (!dataInicio || !dataFim) return null;
     
-    const inicio = parseDateSafe(dataInicio);
-    const fim = parseDateSafe(dataFim);
-    if (!inicio || !fim) return null;
+    const inicio = new Date(dataInicio);
+    const fim = new Date(dataFim);
     const diffMs = fim - inicio;
     const diffMin = Math.floor(diffMs / 60000);
     const diffHoras = Math.floor(diffMs / 3600000);
@@ -478,19 +546,6 @@ function formatarMoeda(valor) {
         style: 'currency',
         currency: 'BRL'
     }).format(valor);
-}
-
-// Traduzir status
-function traduzirStatus(status) {
-    const statusMap = {
-        'created': 'Criado',
-        'paid': 'Pago',
-        'separated': 'Separado',
-        'shipped': 'Enviado',
-        'delivered': 'Entregue',
-        'canceled': 'Cancelado'
-    };
-    return statusMap[status] || status;
 }
 
 // Fechar modal ao clicar fora

@@ -202,7 +202,8 @@
         .status-shipped { background: #8b5cf6; color: white; }
         .status-delivered { background: #059669; color: white; }
         .status-canceled { background: #ef4444; color: white; }
-
+        .status-pending { background: #f50ba7; color: white; }
+        .status-confirmed { background: #14b8a6; color: white; }
         /* Controles */
         .controls {
             background: #111827;
@@ -592,7 +593,9 @@
                 'separated': 'Separado',
                 'shipped': 'Enviado',
                 'delivered': 'Entregue',
-                'canceled': 'Cancelado'
+                'cancelled': 'Cancelado',
+                'pending': 'Pendente',
+                'confirmed': 'Confirmado'
             };
             return map[status] || status;
         }
